@@ -1,0 +1,66 @@
+{
+    // Active provider. One of "ollama", "openai", "anthropic", "openrouter",
+    // "deepseek", "custom".
+    "provider": "ollama",
+
+    // Default Ollama model. With the default provider/base_url and this model,
+    // sublime-llm works without plugin-specific configuration after you install
+    // Ollama, start it, and run `ollama pull llama3.2`.
+    "model": "llama3.2",
+
+    // Ollama base URL. Other providers use their own defaults; override any of
+    // them via the corresponding per-provider setting:
+    //   "openai_base_url", "anthropic_base_url", "openrouter_base_url",
+    //   "deepseek_base_url" (all empty by default — provider defaults are used)
+    //   or "custom_base_url" (required when provider is "custom").
+    "base_url": "http://localhost:11434",
+
+    // Sampling temperature passed to the provider.
+    "temperature": 0.7,
+
+    // Maximum tokens to generate per response. Required for Anthropic.
+    "max_tokens": 4096,
+
+    // System prompt prepended to every conversation. Empty string disables it.
+    "system_prompt": "",
+
+    // If true, allows hosted-provider API keys to be read from this settings
+    // file (keys ending in _api_key). NOT recommended — prefer env vars or
+    // the external config file at ~/.config/sublime-llm/config.json. See
+    // README "External provider config".
+    "allow_secrets_in_settings_file": false,
+
+    // Optional OpenRouter attribution headers. Both may be left empty.
+    "openrouter_referer": "",
+    "openrouter_title": "",
+
+    // Anthropic API version sent as the anthropic-version request header.
+    "anthropic_version": "2023-06-01",
+
+    // Override the Anthropic model list shown by the model picker. Leave empty
+    // to use the plugin's built-in default list.
+    "anthropic_models": [],
+
+    // Override the DeepSeek model list shown by the model picker if the
+    // server's /models endpoint isn't reachable.
+    "deepseek_models": ["deepseek-v4-flash", "deepseek-v4-pro"],
+
+    // Settings for the "custom" OpenAI-compatible provider. Required when
+    // provider is "custom".
+    "custom_base_url": "",
+    // Optional API key for the custom endpoint. The env var CUSTOM_API_KEY and
+    // the external config file are preferred over this setting.
+    "custom_api_key": "",
+    // Fallback model list if the custom server does not expose /v1/models.
+    "custom_models": [],
+    // Display label for the custom provider used in status/error messages
+    // (e.g. "LM Studio", "llama.cpp", "vLLM").
+    "custom_label": "Custom",
+
+    // Prompt prepended when sending a file via the sidebar "sublime-llm: Send
+    // File to Chat" command. The file's raw contents are appended after a
+    // newline. Leave unset to use the built-in default (see commands.py
+    // _DEFAULT_SEND_FILE_PROMPT). Override with a single string; embed
+    // newlines as \n.
+    "send_file_prompt": ""
+}

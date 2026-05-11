@@ -1,0 +1,36 @@
+{
+  "active_provider": "ollama",
+  "providers": {
+    "ollama": {
+      "base_url": "http://localhost:11434",
+      "model": "llama3.2"
+    },
+    "openai": {
+      "api_key": "REPLACE_ME_with_sk-...",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o"
+    },
+    "anthropic": {
+      "api_key": "REPLACE_ME_with_sk-ant-...",
+      "model": "claude-sonnet-4-6"
+    },
+    "openrouter": {
+      "api_key": "REPLACE_ME_with_sk-or-...",
+      "base_url": "https://openrouter.ai/api/v1",
+      "model": "anthropic/claude-sonnet-4.5",
+      "referer": "",
+      "title": "Sublime LLM"
+    },
+    "deepseek": {
+      "api_key": "REPLACE_ME_with_sk-...",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-flash"
+    },
+    "custom": {
+      "api_key": "REPLACE_ME_with_your_endpoint_key",
+      "base_url": "http://localhost:1234/v1",
+      "model": "local-model",
+      "label": "LM Studio"
+    }
+  }
+}

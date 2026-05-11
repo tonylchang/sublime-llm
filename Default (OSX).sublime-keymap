@@ -1,0 +1,24 @@
+[
+    {
+        "keys": ["super+enter"],
+        "command": "sublime_llm_submit",
+        "context": [
+            {"key": "setting.sublime_llm_chat_view", "operator": "equal", "operand": true}
+        ]
+    },
+    {
+        "keys": ["super+shift+l"],
+        "command": "sublime_llm_send_selection",
+        "context": [
+            {"key": "selection_empty", "operator": "equal", "operand": false}
+        ]
+    },
+    {
+        "keys": ["escape"],
+        "command": "sublime_llm_cancel",
+        "context": [
+            {"key": "setting.sublime_llm_chat_view", "operator": "equal", "operand": true},
+            {"key": "setting.sublime_llm_streaming", "operator": "equal", "operand": true}
+        ]
+    }
+]

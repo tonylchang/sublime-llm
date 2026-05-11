@@ -1,0 +1,96 @@
+name: Bug report
+description: Something isn't working the way it should.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please include the diagnostic info below so it can be reproduced. **Do not paste API keys** — the plugin's logger redacts them, but pasted snippets do not.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: One or two sentences describing the bug.
+      placeholder: e.g. "Choose Model fails with 'no models available' for OpenAI even though my key is set."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: e.g. "The picker should list available models from OpenAI."
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, ordered steps. Include exact commands run from the command palette.
+      placeholder: |
+        1. Set provider to "openai" in user settings.
+        2. Run "sublime-llm: Choose Model".
+        3. Observe status bar message.
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: The release tag (e.g. `v1.0.0`) or `git rev-parse HEAD` from your install directory.
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: sublime-build
+    attributes:
+      label: Sublime Text build
+      description: From `Help -> About Sublime Text`.
+      placeholder: 4180
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider in use when the bug occurred
+      options:
+        - ollama
+        - openai
+        - anthropic
+        - openrouter
+        - deepseek
+        - custom
+        - "Not provider-specific"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Sublime console output (optional)
+      description: Open the console with Ctrl+` and paste any `sublime-llm` lines. Keys are redacted, but double-check before posting.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Screenshots, related issues, workarounds you tried.

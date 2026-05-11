@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/tonylchang/sublime-llm/blob/main/SECURITY.md
+    about: Please report security vulnerabilities privately by email — see SECURITY.md.

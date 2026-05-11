@@ -1,0 +1,28 @@
+Sublime LLM installed.
+
+QUICK START (Ollama, local, no API key)
+
+1. Install Ollama: https://ollama.com
+2. Run `ollama serve` and `ollama pull llama3.2`.
+3. In Sublime: Tools -> sublime-llm: Open Chat.
+4. Type, then Ctrl+Enter (macOS: Cmd+Enter) to send.
+
+SETTINGS
+
+Overrides in Packages/User/sublime-llm.sublime-settings.
+
+HOSTED PROVIDERS
+
+Set "provider" to "openai", "anthropic", "openrouter", "deepseek", or "custom".
+API keys: use env vars (OPENAI_API_KEY, ANTHROPIC_API_KEY, OPENROUTER_API_KEY,
+DEEPSEEK_API_KEY, CUSTOM_API_KEY) or the external config file at
+~/.config/sublime-llm/config.json (macOS/Linux) or
+%APPDATA%\sublime-llm\config.json (Windows).
+
+DO NOT commit your sublime-llm.sublime-settings if you set keys there. The
+plugin refuses to read keys from the settings file unless you opt in with
+"allow_secrets_in_settings_file": true.
+
+DOCS
+
+Full README on the GitHub repo. 

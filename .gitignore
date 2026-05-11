@@ -1,0 +1,15 @@
+*.pyc
+__pycache__/
+.DS_Store
+package-metadata.json
+
+# user-local test artifacts
+test_input.txt
+*.local.txt
+
+# defensive — never commit API keys or per-user overrides
+secrets.json
+.config/
+*.sublime-workspace
+.env
+.env.*

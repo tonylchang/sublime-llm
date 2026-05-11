@@ -1,0 +1,24 @@
+Sublime LLM 1.0.0
+
+Initial release.
+
+QUICK START
+
+Local (no API key):
+  1. ollama serve
+  2. ollama pull llama3.2
+  3. In Sublime: Tools -> sublime-llm: Open Chat
+
+Hosted (OpenAI/Anthropic/OpenRouter/DeepSeek/custom):
+  See README "External provider config and API keys" section.
+
+CHANGES
+
+See CHANGELOG.md for the full feature list.
+
+WHAT'S PLANNED
+
+OS keychain integration (macOS Keychain, Windows Credential Manager,
+Linux Secret Service), prompt presets ("explain selection", "write tests"),
+buffer-editing actions (replace selection, insert below), inline phantom mode,
+typing indicator. See PLAN.md section H for the post-1.0 backlog.

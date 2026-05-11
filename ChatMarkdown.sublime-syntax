@@ -1,0 +1,37 @@
+%YAML 1.2
+---
+name: ChatMarkdown
+scope: text.html.markdown.sublime-llm
+file_extensions: []
+hidden: true
+contexts:
+  main:
+    - match: '^(<user>)'
+      captures:
+        1: markup.heading.chat-user.sublime-llm
+      push: markdown_body
+    - match: '^(<assistant>)'
+      captures:
+        1: markup.heading.chat-assistant.sublime-llm
+      push: markdown_body
+    - match: '^(<system>)'
+      captures:
+        1: markup.heading.chat-system.sublime-llm
+      push: markdown_body
+    # Legacy markdown-header markers, kept so older saved chats still render.
+    - match: '^### User\s*$'
+      scope: markup.heading.chat-user.sublime-llm
+      push: markdown_body
+    - match: '^### Assistant\s*$'
+      scope: markup.heading.chat-assistant.sublime-llm
+      push: markdown_body
+    - match: '^### System\s*$'
+      scope: markup.heading.chat-system.sublime-llm
+      push: markdown_body
+    - include: scope:text.html.markdown
+  markdown_body:
+    - match: '^(?=<(user|assistant|system)>)'
+      pop: true
+    - match: '^(?=### (User|Assistant|System)\s*$)'
+      pop: true
+    - include: scope:text.html.markdown

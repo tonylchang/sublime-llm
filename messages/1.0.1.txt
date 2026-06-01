@@ -1,0 +1,16 @@
+Sublime LLM 1.0.1
+
+Maintenance release.
+
+CHANGES
+
+- "Send Selection to Chat" no longer ships a default key binding. The old
+  Ctrl+Shift+L / Cmd+Shift+L binding overrode Sublime's built-in "Split
+  selection into lines". The command is still on the command palette and the
+  right-click menu. To rebind it yourself, see the commented example in the
+  plugin's Default.sublime-keymap or the README.
+- The right-click "Send Selection to Chat" entry now appears only when the
+  selection is non-empty.
+- Tests and docs are excluded from the installed package via .gitattributes.
+
+See CHANGELOG.md for details.

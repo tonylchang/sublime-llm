@@ -1,4 +1,5 @@
 [
+    // Submit the chat input. Active only inside the sublime-llm chat view.
     {
         "keys": ["ctrl+enter"],
         "command": "sublime_llm_submit",
@@ -6,13 +7,7 @@
             {"key": "setting.sublime_llm_chat_view", "operator": "equal", "operand": true}
         ]
     },
-    {
-        "keys": ["ctrl+shift+l"],
-        "command": "sublime_llm_send_selection",
-        "context": [
-            {"key": "selection_empty", "operator": "equal", "operand": false}
-        ]
-    },
+    // Cancel a streaming response. Active only in the chat view while streaming.
     {
         "keys": ["escape"],
         "command": "sublime_llm_cancel",
@@ -21,4 +16,17 @@
             {"key": "setting.sublime_llm_streaming", "operator": "equal", "operand": true}
         ]
     }
+
+    // "Send Selection to Chat" ships without a default key binding on purpose: a
+    // global binding would clash with built-ins (ctrl+shift+l is Sublime's
+    // "Split selection into lines"). Use the command palette or right-click menu,
+    // or add your own binding to Packages/User/Default.sublime-keymap, e.g.:
+    //
+    // {
+    //     "keys": ["ctrl+shift+l"],
+    //     "command": "sublime_llm_send_selection",
+    //     "context": [
+    //         {"key": "selection_empty", "operator": "equal", "operand": false}
+    //     ]
+    // }
 ]

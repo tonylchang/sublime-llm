@@ -227,9 +227,20 @@ Per-project overrides go in your `.sublime-project`:
 
 With a non-empty selection in any view:
 
-- Press `Ctrl+Shift+L` (macOS: `Cmd+Shift+L`), or
 - Right-click and pick `sublime-llm: Send Selection to Chat`, or
 - Run `sublime-llm: Send Selection to Chat` from the command palette.
+
+This command ships without a default key binding to avoid clashing with Sublime's built-in `Ctrl+Shift+L` / `Cmd+Shift+L` ("Split selection into lines"). To bind it yourself, add to `Packages/User/Default.sublime-keymap` (commented examples are in the plugin's `Default.sublime-keymap`):
+
+```json
+{
+    "keys": ["ctrl+shift+l"],
+    "command": "sublime_llm_send_selection",
+    "context": [
+        {"key": "selection_empty", "operator": "equal", "operand": false}
+    ]
+}
+```
 
 The chat view opens (or focuses) and the selection is appended to the input region as a fenced code block. The fence language tag is inferred from the source view's syntax — Python, JavaScript, TypeScript, TSX, JSON, YAML, HTML, CSS, Markdown, Rust, Go, Ruby, Java, C++, C, shell, and SQL are recognized; other syntaxes get an empty language tag.
 

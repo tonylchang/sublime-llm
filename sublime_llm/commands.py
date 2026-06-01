@@ -492,6 +492,9 @@ class SublimeLlmSendSelectionCommand(_TextCommandBase):  # type: ignore[misc,val
         except Exception:
             return False
 
+    def is_visible(self) -> bool:
+        return self.is_enabled()
+
     def run(self, edit) -> None:
         regions = [r for r in self.view.sel() if not r.empty()]
         if not regions:

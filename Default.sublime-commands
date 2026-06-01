@@ -8,5 +8,6 @@
     {"caption": "sublime-llm: Choose Provider", "command": "sublime_llm_choose_provider"},
     {"caption": "sublime-llm: Show Status", "command": "sublime_llm_show_status"},
     {"caption": "sublime-llm: Show External Config Status", "command": "sublime_llm_show_secret_status"},
-    {"caption": "sublime-llm: Render Last Response", "command": "sublime_llm_render_last_response"}
+    {"caption": "sublime-llm: Render Last Response", "command": "sublime_llm_render_last_response"},
+    {"caption": "sublime-llm: Settings", "command": "edit_settings", "args": {"base_file": "${packages}/sublime-llm/sublime-llm.sublime-settings", "default": "{\n\t$0\n}\n"}}
 ]

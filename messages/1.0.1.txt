@@ -4,6 +4,9 @@ Maintenance release.
 
 CHANGES
 
+- New "sublime-llm: Settings" command (command palette and Preferences ->
+  Package Settings -> sublime-llm -> Settings) opens the default and user
+  settings side by side.
 - "Send Selection to Chat" no longer ships a default key binding. The old
   Ctrl+Shift+L / Cmd+Shift+L binding overrode Sublime's built-in "Split
   selection into lines". The command is still on the command palette and the

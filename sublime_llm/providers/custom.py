@@ -4,9 +4,9 @@ import socket
 import urllib.error
 from typing import List, Optional
 
-from sublime_llm.logging_setup import get_logger
-from sublime_llm.providers.base import ProviderHealth
-from sublime_llm.providers.openai import OpenAIProvider, _normalize_base_url
+from ..logging_setup import get_logger
+from .base import ProviderHealth
+from .openai import OpenAIProvider, _normalize_base_url
 
 _log = get_logger()
 

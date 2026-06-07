@@ -3,7 +3,7 @@ import json
 import threading
 from typing import Iterator, Tuple
 
-from sublime_llm.logging_setup import get_logger
+from .logging_setup import get_logger
 
 _log = get_logger()
 

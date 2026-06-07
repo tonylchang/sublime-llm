@@ -12,19 +12,19 @@ except ImportError:
     sublime = None  # type: ignore
     sublime_plugin = None  # type: ignore
 
-from sublime_llm import persistence
-from sublime_llm.chat_parser import parse_messages
-from sublime_llm.chat_view import ChatView
-from sublime_llm.logging_setup import get_logger
-from sublime_llm.markdown_render import md_to_html, wrap_minihtml
-from sublime_llm.providers import Done, ProviderError, ProviderHealth, TextDelta
-from sublime_llm.registry import get_active_provider, get_provider
-from sublime_llm.secrets import (
+from . import persistence
+from .chat_parser import parse_messages
+from .chat_view import ChatView
+from .logging_setup import get_logger
+from .markdown_render import md_to_html, wrap_minihtml
+from .providers import Done, ProviderError, ProviderHealth, TextDelta
+from .registry import get_active_provider, get_provider
+from .secrets import (
     get_external_config_file_path,
     get_secrets_file_path,
     resolve_key,
 )
-from sublime_llm.settings import SETTINGS_FILENAME, get_settings
+from .settings import SETTINGS_FILENAME, get_settings
 
 PROVIDER_NAMES = ["ollama", "openai", "anthropic", "openrouter", "deepseek", "custom"]
 HOSTED_PROVIDER_NAMES = ["openai", "anthropic", "openrouter", "deepseek", "custom"]
@@ -749,7 +749,7 @@ def _health_label(health) -> str:
 
 def _import_persistence():
     try:
-        from sublime_llm import persistence  # type: ignore
+        from . import persistence  # type: ignore
         return persistence
     except ImportError:
         return None

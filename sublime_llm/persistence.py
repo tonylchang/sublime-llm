@@ -9,7 +9,7 @@ try:
 except ImportError:
     sublime = None  # type: ignore
 
-from sublime_llm.logging_setup import get_logger
+from .logging_setup import get_logger
 
 # Tests can override this to point at a tempdir.
 _TEST_STORAGE_ROOT: Optional[str] = None

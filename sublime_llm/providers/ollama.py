@@ -8,8 +8,8 @@ import urllib.error
 import urllib.request
 from typing import Iterator, List, Optional
 
-from sublime_llm.logging_setup import get_logger
-from sublime_llm.providers.base import (
+from ..logging_setup import get_logger
+from .base import (
     ChatMessage,
     Done,
     Provider,
@@ -18,7 +18,7 @@ from sublime_llm.providers.base import (
     StreamEvent,
     TextDelta,
 )
-from sublime_llm.streaming import iter_ndjson_lines
+from ..streaming import iter_ndjson_lines
 
 try:
     import certifi

@@ -2,7 +2,7 @@
 import re
 from typing import List
 
-from sublime_llm.providers import ChatMessage
+from .providers import ChatMessage
 
 _HEADER_RE = re.compile(
     r"^(?:<(user|assistant|system)>|### (User|Assistant|System))",

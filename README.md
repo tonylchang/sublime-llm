@@ -1,8 +1,8 @@
-# Sublime LLM
+# LLM for Sublime Text
 
 A chat interface for LLMs (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, plus any OpenAI-compatible endpoint) inside Sublime Text 4.
 
-![sublime-llm streaming a response](docs/demo.gif)
+![LLM streaming a response](docs/demo.gif)
 
 Use it for:
 
@@ -19,10 +19,10 @@ Use it for:
    - macOS: `~/Library/Application Support/Sublime Text/Packages/`
    - Linux: `~/.config/sublime-text/Packages/`
    - Windows: `%APPDATA%\Sublime Text\Packages\`
-2. Clone or symlink this repository into that directory as `sublime-llm`:
+2. Clone or symlink this repository into that directory as `LLM`:
 
    ```
-   ln -s <path-to-clone> '<packages-dir>/sublime-llm'
+   ln -s <path-to-clone> '<packages-dir>/LLM'
    ```
 
 3. Restart Sublime Text.
@@ -31,13 +31,13 @@ The plugin requires Sublime Text build **4050 or newer** (Python 3.8+ plugin hos
 
 ## Quickstart: Ollama (works by default)
 
-Ollama runs models locally — no API key, no network egress, and no sublime-llm-specific configuration if you use the default `llama3.2` model.
+Ollama runs models locally — no API key, no network egress, and no LLM-specific configuration if you use the default `llama3.2` model.
 
 1. Install Ollama: https://ollama.com
 2. Start the server: `ollama serve` (or use the desktop app).
 3. Pull a model: `ollama pull llama3.2`
-4. In Sublime: use command palette: `sublime-llm: Choose Model`
-5. In Sublime: `Tools -> sublime-llm: Open Chat` (or use the command palette: `sublime-llm: Open Chat`).
+4. In Sublime: use command palette: `LLM: Choose Model`
+5. In Sublime: `Tools -> LLM: Open Chat` (or use the command palette: `LLM: Open Chat`).
 6. Type a message after the `<user> ` prompt.
 7. Press `Ctrl+Enter` (macOS: `Cmd+Enter`) to send.
 
@@ -47,7 +47,7 @@ Default settings already point at local Ollama:
 - `base_url`: `"http://localhost:11434"` (also honors the `OLLAMA_HOST` environment variable when `base_url` is unset)
 - `model`: `"llama3.2"`
 
-That means a fresh install should work after `ollama serve` and `ollama pull llama3.2`. Use `sublime-llm: Choose Model` or set `providers.ollama.model` in `config.json` only if you want a different local model.
+That means a fresh install should work after `ollama serve` and `ollama pull llama3.2`. Use `LLM: Choose Model` or set `providers.ollama.model` in `config.json` only if you want a different local model.
 
 If Ollama isn't running, errors surface as `Ollama is not running. Start it with ollama serve.`
 
@@ -70,7 +70,7 @@ To use OpenAI, Anthropic, OpenRouter, or DeepSeek, update `api_key` in `config.j
       "base_url": "https://openrouter.ai/api/v1",
       "model": "anthropic/claude-sonnet-4.5",
       "referer": "",
-      "title": "Sublime LLM"
+      "title": "LLM"
     },
     "deepseek": {
       "api_key": "REPLACE_ME_with_sk-...",
@@ -78,11 +78,11 @@ To use OpenAI, Anthropic, OpenRouter, or DeepSeek, update `api_key` in `config.j
       "model": "deepseek-v4-flash"
     },
    ```
-   Update `model` to change the default model or select "sublime-llm: Choose Model" from the command palette to pick a specific model from the chosen provider.
+   Update `model` to change the default model or select "LLM: Choose Model" from the command palette to pick a specific model from the chosen provider.
 
 ## External provider config and API keys
 
-sublime-llm keeps provider-level settings outside Sublime's settings file. The default external config path is `~/.config/sublime-llm/config.json` on macOS / Linux, or `%APPDATA%\sublime-llm\config.json` on Windows. A template is shipped as [`config.example.json`](config.example.json).
+LLM keeps provider-level settings outside Sublime's settings file. The default external config path is `~/.config/sublime-llm/config.json` on macOS / Linux, or `%APPDATA%\sublime-llm\config.json` on Windows. A template is shipped as [`config.example.json`](config.example.json).
 
 Example:
 
@@ -137,14 +137,14 @@ On POSIX systems, the plugin checks external config and legacy key-only file per
 
 Whenever a key is resolved, it is registered with the logger's redacting filter so it cannot accidentally appear in log output, even from third-party libraries.
 
-You can verify which source a key came from with `sublime-llm: Show External Config Status`. The display masks all but the last four characters of every key.
+You can verify which source a key came from with `LLM: Show External Config Status`. The display masks all but the last four characters of every key.
 
 ### Recommended .gitignore
 
 If you sync your Sublime user directory to git or a cloud drive, add:
 
 ```
-# sublime-llm local/private config
+# LLM local/private config
 config.json
 secrets.json
 sublime-llm.sublime-settings
@@ -162,21 +162,21 @@ Default bindings:
 | `Ctrl+Shift+L` | `Cmd+Shift+L` | any view, with a non-empty selection | Send the selection to the chat view as a fenced code block. |
 | `Esc` | `Esc` | chat view, while streaming | Cancel the in-flight response. |
 
-All commands are also reachable via the command palette under the `sublime-llm: ` prefix:
+All commands are also reachable via the command palette under the `LLM: ` prefix:
 
 | Command | Effect |
 |---|---|
-| `sublime-llm: Open Chat` | Open or focus the chat view (creates a side group if needed). |
-| `sublime-llm: Submit Message` | Send the current input region. |
-| `sublime-llm: Send Selection to Chat` | Pre-fill chat input with the current selection wrapped in a fenced code block. |
-| `sublime-llm: Cancel` | Cancel an in-flight stream. |
-| `sublime-llm: Choose Model` | Quick-panel model picker. |
-| `sublime-llm: Choose Provider` | Quick-panel provider picker with health badges. |
-| `sublime-llm: Show Status` | Diagnostic display: provider, model, health, model count. |
-| `sublime-llm: Show External Config Status` | Per-provider key source, last-four-character masked. |
-| `sublime-llm: Clear Chat History` | Empty the chat for the current project and remove its on-disk transcript. |
+| `LLM: Open Chat` | Open or focus the chat view (creates a side group if needed). |
+| `LLM: Submit Message` | Send the current input region. |
+| `LLM: Send Selection to Chat` | Pre-fill chat input with the current selection wrapped in a fenced code block. |
+| `LLM: Cancel` | Cancel an in-flight stream. |
+| `LLM: Choose Model` | Quick-panel model picker. |
+| `LLM: Choose Provider` | Quick-panel provider picker with health badges. |
+| `LLM: Show Status` | Diagnostic display: provider, model, health, model count. |
+| `LLM: Show External Config Status` | Per-provider key source, last-four-character masked. |
+| `LLM: Clear Chat History` | Empty the chat for the current project and remove its on-disk transcript. |
 
-`sublime-llm: Open Chat` is also wired into `Tools -> sublime-llm: Open Chat`. `sublime-llm: Send Selection to Chat` is wired into the editor's right-click context menu when a selection is non-empty.
+`LLM: Open Chat` is also wired into `Tools -> LLM: Open Chat`. `LLM: Send Selection to Chat` is wired into the editor's right-click context menu when a selection is non-empty.
 
 ## Settings reference
 
@@ -185,7 +185,7 @@ General chat settings live in `sublime-llm.sublime-settings` (defaults shipped w
 | Key | Default | Purpose |
 |---|---|---|
 | `provider` | `"ollama"` | Active provider. One of `ollama`, `openai`, `anthropic`, `openrouter`, `deepseek`, `custom`. |
-| `model` | `"llama3.2"` | Model identifier for the active provider. The default matches the Ollama quickstart; set another model via `config.json`, user settings, or `sublime-llm: Choose Model`. |
+| `model` | `"llama3.2"` | Model identifier for the active provider. The default matches the Ollama quickstart; set another model via `config.json`, user settings, or `LLM: Choose Model`. |
 | `base_url` | `"http://localhost:11434"` | Used by the Ollama provider. Other providers have their own defaults (see provider matrix). |
 | `temperature` | `0.7` | Sampling temperature. |
 | `max_tokens` | `4096` | Max completion tokens. Required for Anthropic; recommended for OpenAI. |
@@ -221,14 +221,14 @@ Per-project overrides go in your `.sublime-project`:
 - The input region is the text after the last `<user> ` prompt — type freely there.
 - The chat view is a Sublime scratch buffer; it will not prompt to save on close. Per-project on-disk persistence keeps the conversation across restarts under `Packages/User/sublime-llm/chats/<slug>.md`.
 - Fenced code blocks (e.g. ```` ```python ````) get language-specific syntax highlighting via the standard Markdown embedding mechanism. The chat syntax is `ChatMarkdown.sublime-syntax`, shipped with the plugin.
-- One active chat per window. Reopening it via `sublime-llm: Open Chat` focuses the existing view instead of creating a new one.
+- One active chat per window. Reopening it via `LLM: Open Chat` focuses the existing view instead of creating a new one.
 
 ## Sending a selection to chat
 
 With a non-empty selection in any view:
 
-- Right-click and pick `sublime-llm: Send Selection to Chat`, or
-- Run `sublime-llm: Send Selection to Chat` from the command palette.
+- Right-click and pick `LLM: Send Selection to Chat`, or
+- Run `LLM: Send Selection to Chat` from the command palette.
 
 This command ships without a default key binding to avoid clashing with Sublime's built-in `Ctrl+Shift+L` / `Cmd+Shift+L` ("Split selection into lines"). To bind it yourself, add to `Packages/User/Default.sublime-keymap` (commented examples are in the plugin's `Default.sublime-keymap`):
 
@@ -254,11 +254,11 @@ If the chat input already contains text, the selection is appended below a blank
 
 **`UNREACHABLE` for a hosted provider.** Check your network and corporate proxy. The plugin issues plain `urllib` requests; it doesn't read `http_proxy`/`https_proxy` env vars automatically (Sublime's bundled Python doesn't include `urllib3` request-level proxy detection).
 
-**`MISSING_CREDENTIAL` / `BAD_CREDENTIAL` for OpenAI, Anthropic, OpenRouter, DeepSeek.** Verify the key resolution source with `sublime-llm: Show External Config Status` — it shows whether each key was resolved from env, external config, legacy file, settings, or is missing, with the last four characters masked. If env vars aren't picked up on macOS, see the launchd caveat above.
+**`MISSING_CREDENTIAL` / `BAD_CREDENTIAL` for OpenAI, Anthropic, OpenRouter, DeepSeek.** Verify the key resolution source with `LLM: Show External Config Status` — it shows whether each key was resolved from env, external config, legacy file, settings, or is missing, with the last four characters masked. If env vars aren't picked up on macOS, see the launchd caveat above.
 
 **Streaming feels slow.** Token batching is set to flush every 50 ms server-side; the actual cadence is dominated by the upstream model. A typing indicator is planned in the post-MVP backlog (ticket H5).
 
-**Chat view is gone.** `sublime-llm: Open Chat` reopens or focuses it. Chat content lives in a scratch buffer; per-project on-disk persistence keeps the conversation across restarts.
+**Chat view is gone.** `LLM: Open Chat` reopens or focuses it. Chat content lives in a scratch buffer; per-project on-disk persistence keeps the conversation across restarts.
 
 **Stream looks corrupted.** A `STREAM_CORRUPTED` message means the plugin received bytes it couldn't parse as the provider's expected wire format. Cancel and retry. If it reproduces, file an issue with the provider name and (sanitized) sample.
 

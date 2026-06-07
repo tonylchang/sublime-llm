@@ -119,13 +119,13 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         user_text = chat_view.read_input()
         if not user_text:
             if sublime is not None:
-                sublime.status_message("sublime-llm: input is empty")
+                sublime.status_message("LLM: input is empty")
             return
         handle = chat_view.get_handle()
         if handle is not None and handle.streaming:
             if sublime is not None:
                 sublime.status_message(
-                    "sublime-llm: response in progress; press Esc or run sublime-llm: Cancel"
+                    "LLM: response in progress; press Esc or run LLM: Cancel"
                 )
             return
 
@@ -134,7 +134,7 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         model = settings.get_model()
         if not model:
             if sublime is not None:
-                sublime.status_message("sublime-llm: model not configured")
+                sublime.status_message("LLM: model not configured")
             return
 
         view = chat_view.get_view()
@@ -144,7 +144,7 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         messages = parse_messages(buffer_text, system_prompt)
         if not messages:
             if sublime is not None:
-                sublime.status_message("sublime-llm: input is empty")
+                sublime.status_message("LLM: input is empty")
             return
 
         chat_view.get_view().run_command(
@@ -157,7 +157,7 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         chat_view.set_streaming(True)
         if sublime is not None:
             _start_thinking_indicator(chat_view.get_view())
-            sublime.status_message("sublime-llm: streaming...")
+            sublime.status_message("LLM: streaming...")
 
         options = {
             "temperature": settings.get_temperature(),
@@ -250,7 +250,7 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         chat_view.append_raw("(error: {0} - {1})".format(err.code, err.message))
         chat_view.append_user_marker()
         if sublime is not None:
-            sublime.status_message("sublime-llm: " + err.message)
+            sublime.status_message("LLM: " + err.message)
 
     def _on_done(self, chat_view, cancelled: bool) -> None:
         if sublime is not None:
@@ -275,9 +275,9 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
                 get_logger().warning("render phantom: failed")
         if sublime is not None:
             if cancelled:
-                sublime.status_message("sublime-llm: cancelled")
+                sublime.status_message("LLM: cancelled")
             else:
-                sublime.status_message("sublime-llm: done")
+                sublime.status_message("LLM: done")
 
 
 class SublimeLlmCancelCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
@@ -290,7 +290,7 @@ class SublimeLlmCancelCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
             return
         event.set()
         if sublime is not None:
-            sublime.status_message("sublime-llm: cancelling...")
+            sublime.status_message("LLM: cancelling...")
 
     def is_enabled(self) -> bool:
         chat_view = ChatView.find(self.window)
@@ -330,7 +330,7 @@ class SublimeLlmClearChatCommand(_WindowCommandBase):  # type: ignore[misc,valid
                     pass
             chat_view.init_template()
         if sublime is not None:
-            sublime.status_message("sublime-llm: chat history cleared")
+            sublime.status_message("LLM: chat history cleared")
 
     def is_enabled(self) -> bool:
         if ChatView.find(self.window) is not None:
@@ -392,19 +392,19 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
         if not path:
             if sublime is not None:
                 sublime.status_message(
-                    "sublime-llm: no file selected — right-click a file in the sidebar"
+                    "LLM: no file selected — right-click a file in the sidebar"
                 )
             return
         try:
             size = os.path.getsize(path)
         except OSError as e:
             if sublime is not None:
-                sublime.status_message("sublime-llm: cannot stat {0}: {1}".format(path, e))
+                sublime.status_message("LLM: cannot stat {0}: {1}".format(path, e))
             return
         if size > _SEND_FILE_MAX_BYTES:
             if sublime is not None:
                 sublime.status_message(
-                    "sublime-llm: file too large ({0} bytes); 1 MiB max".format(size)
+                    "LLM: file too large ({0} bytes); 1 MiB max".format(size)
                 )
             return
         try:
@@ -412,7 +412,7 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
                 contents = f.read()
         except OSError as e:
             if sublime is not None:
-                sublime.status_message("sublime-llm: cannot read {0}: {1}".format(path, e))
+                sublime.status_message("LLM: cannot read {0}: {1}".format(path, e))
             return
 
         prompt = get_settings().get("send_file_prompt", _DEFAULT_SEND_FILE_PROMPT) or _DEFAULT_SEND_FILE_PROMPT
@@ -477,7 +477,7 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
         view.sel().add(sublime.Region(view.size()))
         view.show(view.size())
         sublime.status_message(
-            "sublime-llm: analyzing {0}...".format(basename)
+            "LLM: analyzing {0}...".format(basename)
         )
 
         # Auto-submit. Defer slightly so the view updates and the fold settles
@@ -581,7 +581,7 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         if provider is None:
             if sublime is not None:
                 sublime.status_message(
-                    "sublime-llm: unknown provider '{0}'".format(provider_name)
+                    "LLM: unknown provider '{0}'".format(provider_name)
                 )
             return
 
@@ -593,14 +593,14 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
             if key is None:
                 if sublime is not None:
                     sublime.status_message(
-                        "sublime-llm: no API key for {0}; run 'sublime-llm: Show External Config Status'".format(
+                        "LLM: no API key for {0}; run 'LLM: Show External Config Status'".format(
                             provider_name
                         )
                     )
                 return
 
         if sublime is not None:
-            sublime.status_message("sublime-llm: fetching models...")
+            sublime.status_message("LLM: fetching models...")
 
         thread = threading.Thread(
             target=self._fetch_and_show, args=(provider, provider_name), daemon=True
@@ -629,7 +629,7 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
 
     def _empty_models_message(self, provider_name: str, health) -> str:
         if health is None:
-            return "sublime-llm: {0}: model list request failed (see console)".format(
+            return "LLM: {0}: model list request failed (see console)".format(
                 provider_name
             )
         try:
@@ -637,18 +637,18 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         except AttributeError:
             health_name = str(health)
         if health_name == "MISSING_CREDENTIAL":
-            return "sublime-llm: {0}: API key missing or rejected (401)".format(
+            return "LLM: {0}: API key missing or rejected (401)".format(
                 provider_name
             )
         if health_name == "UNREACHABLE":
-            return "sublime-llm: {0}: endpoint unreachable; check network".format(
+            return "LLM: {0}: endpoint unreachable; check network".format(
                 provider_name
             )
         if health_name == "MISCONFIGURED":
-            return "sublime-llm: {0}: endpoint reachable but misconfigured (see console)".format(
+            return "LLM: {0}: endpoint reachable but misconfigured (see console)".format(
                 provider_name
             )
-        return "sublime-llm: {0}: no models returned".format(provider_name)
+        return "LLM: {0}: no models returned".format(provider_name)
 
     def _show_panel(self, models) -> None:
         if sublime is None:
@@ -659,7 +659,7 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
                 return
             chosen = models[idx]
             _write_setting("model", chosen)
-            sublime.status_message("sublime-llm: model set to {0}".format(chosen))
+            sublime.status_message("LLM: model set to {0}".format(chosen))
 
         self.window.show_quick_panel(models, on_select)
 
@@ -725,7 +725,7 @@ class SublimeLlmChooseProviderCommand(_WindowCommandBase):  # type: ignore[misc,
                 return
             chosen = names[idx]
             _write_setting("provider", chosen)
-            sublime.status_message("sublime-llm: provider set to {0}".format(chosen))
+            sublime.status_message("LLM: provider set to {0}".format(chosen))
 
         self.window.show_quick_panel(labels, on_select)
 
@@ -807,7 +807,7 @@ class SublimeLlmShowStatusCommand(_WindowCommandBase):  # type: ignore[misc,vali
         chat_path = _chat_history_path(self.window)
 
         lines = []
-        lines.append("sublime-llm Status")
+        lines.append("LLM Status")
         lines.append("==================")
         prov_line = "Provider: {0}".format(provider_name)
         if provider is None:
@@ -866,7 +866,7 @@ class SublimeLlmShowSecretStatusCommand(_WindowCommandBase):  # type: ignore[mis
 
         width = max(len(n) for n, _, _ in entries) + 1
         lines = []
-        lines.append("sublime-llm External Config Status")
+        lines.append("LLM External Config Status")
         lines.append("==================================")
         for name, key, source in entries:
             label = (name + ":").ljust(width + 1)
@@ -1037,24 +1037,24 @@ class SublimeLlmRenderLastResponseCommand(_WindowCommandBase):  # type: ignore[m
             return
         chat = ChatView.find(self.window)
         if chat is None:
-            sublime.status_message("sublime-llm: no chat view")
+            sublime.status_message("LLM: no chat view")
             return
         view = chat.get_view()
         region = _find_last_assistant_region(view)
         if region is None:
-            sublime.status_message("sublime-llm: no assistant response to render")
+            sublime.status_message("LLM: no assistant response to render")
             return
         start, end = region
         body = view.substr(sublime.Region(start, end)).strip()
         if not body:
-            sublime.status_message("sublime-llm: response is empty")
+            sublime.status_message("LLM: response is empty")
             return
         html = wrap_minihtml(md_to_html(body))
         try:
             self.window.new_html_sheet("Rendered Response", html)
         except Exception as e:
             get_logger().warning("new_html_sheet failed: %s", e)
-            sublime.status_message("sublime-llm: render failed (see console)")
+            sublime.status_message("LLM: render failed (see console)")
 
     def is_enabled(self) -> bool:
         return ChatView.find(self.window) is not None

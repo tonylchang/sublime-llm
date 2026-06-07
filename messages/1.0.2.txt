@@ -1,0 +1,15 @@
+LLM 1.0.2
+
+Renamed to "LLM" (formerly "sublime-llm") for Package Control.
+
+CHANGES
+
+- Command palette and menu captions are now prefixed "LLM:" (for example
+  "LLM: Open Chat"). Settings is now "Preferences: LLM Settings".
+- Internal cleanup: the plugin uses relative imports and no longer
+  manipulates sys.path.
+
+Your external config (~/.config/sublime-llm/config.json), saved chats,
+and user settings file are unchanged.
+
+See CHANGELOG.md for details.

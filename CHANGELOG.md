@@ -1,9 +1,20 @@
 # Changelog
 
-All notable changes to sublime-llm will be documented in this file.
+All notable changes to LLM (formerly `sublime-llm`) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.2] - 2026-06-06
+
+### Changed
+- Renamed the package to **LLM** (was `sublime-llm`) for Package Control. Command palette and menu captions are now prefixed `LLM:`, and the settings command is `Preferences: LLM Settings`.
+
+### Fixed
+- The chat-view syntax and the settings command now resolve under the `LLM` package directory (paths were hardcoded to `sublime-llm`).
+
+### Packaging
+- The plugin uses relative imports and no longer manipulates `sys.path` in `plugin.py`.
 
 ## [1.0.1] - 2026-05-31
 
@@ -58,5 +69,7 @@ Initial release.
 ### Changed
 - Command palette caption now refers to external config status instead of secret storage status.
 
-[Unreleased]: https://github.com/tonylchang/sublime-llm/compare/1.0.0...HEAD
-[1.0.0]: https://github.com/tonylchang/sublime-llm/releases/tag/1.0.0
+[Unreleased]: https://github.com/tonylchang/sublime-llm/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/tonylchang/sublime-llm/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/tonylchang/sublime-llm/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/tonylchang/sublime-llm/releases/tag/v1.0.0

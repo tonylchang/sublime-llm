@@ -8,24 +8,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PublicTextTests(unittest.TestCase):
-    def test_status_messages_use_sublime_llm_prefix(self) -> None:
+    def test_status_messages_use_llm_prefix(self) -> None:
+        # User-facing status messages carry the "LLM:" brand prefix, not the
+        # old "sublime-llm:" one.
         commands = (ROOT / "sublime_llm" / "commands.py").read_text(encoding="utf-8")
-        self.assertNotIn('status_message("LLM:', commands)
-        self.assertNotIn("status_message('LLM:", commands)
-        self.assertNotIn('return "LLM:', commands)
+        self.assertNotIn('status_message("sublime-llm:', commands)
+        self.assertNotIn("status_message('sublime-llm:", commands)
+        self.assertNotIn('return "sublime-llm:', commands)
 
-    def test_public_docs_use_sublime_llm_command_prefix(self) -> None:
+    def test_public_docs_use_llm_command_prefix(self) -> None:
+        # Evergreen user-facing docs reference the current "LLM:" command
+        # prefix. CHANGELOG and per-version upgrade messages are historical
+        # and intentionally retain the old "sublime-llm:" names.
         checked = [
             ROOT / "README.md",
             ROOT / "INSTALL.md",
-            ROOT / "CHANGELOG.md",
             ROOT / "messages" / "install.txt",
-            ROOT / "messages" / "1.0.0.txt",
         ]
         offenders = []
         for path in checked:
             text = path.read_text(encoding="utf-8")
-            for match in re.finditer(r"\bLLM:", text):
+            for match in re.finditer(r"sublime-llm:", text):
                 line = text.count("\n", 0, match.start()) + 1
                 offenders.append(f"{path.relative_to(ROOT)}:{line}")
         self.assertEqual(offenders, [])

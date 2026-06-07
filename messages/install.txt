@@ -1,10 +1,10 @@
-Sublime LLM installed.
+LLM installed.
 
 QUICK START (Ollama, local, no API key)
 
 1. Install Ollama: https://ollama.com
 2. Run `ollama serve` and `ollama pull llama3.2`.
-3. In Sublime: Tools -> sublime-llm: Open Chat.
+3. In Sublime: Tools -> LLM: Open Chat.
 4. Type, then Ctrl+Enter (macOS: Cmd+Enter) to send.
 
 SETTINGS

@@ -32,7 +32,7 @@ body:
       description: Minimal, ordered steps. Include exact commands run from the command palette.
       placeholder: |
         1. Set provider to "openai" in user settings.
-        2. Run "sublime-llm: Choose Model".
+        2. Run "LLM: Choose Model".
         3. Observe status bar message.
     validations:
       required: true

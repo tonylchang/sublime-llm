@@ -1,6 +1,6 @@
 # Installation
 
-This guide covers installing sublime-llm into Sublime Text 4 on macOS, Linux, and Windows. For configuration and usage after install, see the [README](README.md).
+This guide covers installing LLM into Sublime Text 4 on macOS, Linux, and Windows. For configuration and usage after install, see the [README](README.md).
 
 ## Requirements
 
@@ -25,7 +25,7 @@ cd '<Packages>'
 git clone https://github.com/tonylchang/sublime-llm.git
 ```
 
-The directory name **must** be `sublime-llm` (not `sublime-llm-main` or similar) — the plugin's syntax file references `Packages/sublime-llm/ChatMarkdown.sublime-syntax`.
+The directory name **must** be `LLM` (not `LLM-main` or similar) — the plugin's syntax file references `Packages/LLM/ChatMarkdown.sublime-syntax`.
 
 ### Option B — clone elsewhere and symlink
 
@@ -33,13 +33,13 @@ Useful if you want the working copy somewhere outside Sublime's Packages directo
 
 ```sh
 git clone https://github.com/tonylchang/sublime-llm.git ~/git/sublime-llm
-ln -s ~/git/sublime-llm '<Packages>/sublime-llm'
+ln -s ~/git/sublime-llm '<Packages>/LLM'
 ```
 
 On Windows, use `mklink /D` from an elevated `cmd.exe`:
 
 ```cmd
-mklink /D "%APPDATA%\Sublime Text\Packages\sublime-llm" "C:\path\to\your\clone"
+mklink /D "%APPDATA%\Sublime Text\Packages\LLM" "C:\path\to\your\clone"
 ```
 
 ### Restart Sublime Text
@@ -48,9 +48,9 @@ After cloning or symlinking, restart Sublime Text so the plugin host loads the p
 
 ## Verify the install
 
-1. Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `sublime-llm:`. You should see entries like `sublime-llm: Open Chat`, `sublime-llm: Choose Provider`, `sublime-llm: Show Status`.
-2. Run `sublime-llm: Open Chat`. A new tab named **LLM Chat** should appear with a `<user> ` prompt at the bottom.
-3. Run `sublime-llm: Show Status`. The status panel should report the active provider, model, base URL, and a list of available models.
+1. Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and type `LLM:`. You should see entries like `LLM: Open Chat`, `LLM: Choose Provider`, `LLM: Show Status`.
+2. Run `LLM: Open Chat`. A new tab named **LLM Chat** should appear with a `<user> ` prompt at the bottom.
+3. Run `LLM: Show Status`. The status panel should report the active provider, model, base URL, and a list of available models.
 
 If any of these fail, open the Sublime console with ``Ctrl+` `` and look for `sublime-llm` log lines.
 
@@ -62,11 +62,11 @@ If any of these fail, open the Sublime console with ``Ctrl+` `` and look for `su
 2. Pull the default model: `ollama pull llama3.2`.
 3. Type a message in the chat view's input region and press `Ctrl+Enter` (macOS: `Cmd+Enter`) to send.
 
-No sublime-llm-specific configuration is required for this default path. Run `sublime-llm: Choose Model` only if you want to switch to a different pulled model.
+No LLM-specific configuration is required for this default path. Run `LLM: Choose Model` only if you want to switch to a different pulled model.
 
 ### Path B — hosted provider (OpenAI, Anthropic, OpenRouter, DeepSeek, custom)
 
-1. Open `Preferences -> Package Settings -> Sublime LLM -> Settings` and set `provider` and `model`. Example:
+1. Open `Preferences -> Package Settings -> LLM -> Settings` and set `provider` and `model`. Example:
 
    ```json
    {
@@ -79,7 +79,7 @@ No sublime-llm-specific configuration is required for this default path. Run `su
 
    ```sh
    mkdir -p ~/.config/sublime-llm
-   cp '<Packages>/sublime-llm/config.example.json' ~/.config/sublime-llm/config.json
+   cp '<Packages>/LLM/config.example.json' ~/.config/sublime-llm/config.json
    chmod 600 ~/.config/sublime-llm/config.json
    $EDITOR ~/.config/sublime-llm/config.json
    ```
@@ -100,8 +100,8 @@ No sublime-llm-specific configuration is required for this default path. Run `su
 
    Any value containing `REPLACE_ME` is treated as a placeholder and ignored, so an unedited copy is harmless. The plugin enforces `0600` permissions on this file when it writes it. Existing legacy key-only `secrets.json` installs are still readable for backward compatibility. See the [README](README.md#external-provider-config-and-api-keys) for the full key-resolution chain.
 
-3. Run `sublime-llm: Show External Config Status` to confirm the key was picked up.
-4. Send a test message via `sublime-llm: Open Chat`.
+3. Run `LLM: Show External Config Status` to confirm the key was picked up.
+4. Send a test message via `LLM: Open Chat`.
 
 ## Updating
 
@@ -114,7 +114,7 @@ Updates land automatically. Run `Package Control: Upgrade Package` to pull the n
 Pull from the clone:
 
 ```sh
-cd '<Packages>/sublime-llm'   # or wherever your clone lives
+cd '<Packages>/LLM'   # or wherever your clone lives
 git pull
 ```
 
@@ -124,14 +124,14 @@ Sublime auto-reloads the plugin on file change.
 
 ### Package Control
 
-Run `Package Control: Remove Package` and pick `sublime-llm`.
+Run `Package Control: Remove Package` and pick `LLM`.
 
 ### Manual install
 
 Remove the directory or symlink from the Packages directory:
 
 ```sh
-rm -rf '<Packages>/sublime-llm'   # or `unlink` if it's a symlink
+rm -rf '<Packages>/LLM'   # or `unlink` if it's a symlink
 ```
 
 Optional cleanup of user state:
@@ -143,12 +143,12 @@ Optional cleanup of user state:
 
 ## Troubleshooting
 
-**Commands don't appear in the palette.** Confirm the directory under `<Packages>` is named exactly `sublime-llm` and that you restarted Sublime after install.
+**Commands don't appear in the palette.** Confirm the directory under `<Packages>` is named exactly `LLM` and that you restarted Sublime after install.
 
-**`failed to assign ChatMarkdown syntax` in the console.** Same root cause — the syntax file is loaded by the path `Packages/sublime-llm/ChatMarkdown.sublime-syntax`. Rename the directory to `sublime-llm`.
+**`failed to assign ChatMarkdown syntax` in the console.** Same root cause — the syntax file is loaded by the path `Packages/LLM/ChatMarkdown.sublime-syntax`. Rename the directory to `LLM`.
 
 **`Ollama is not running`.** Start the Ollama server (`ollama serve` or the desktop app) and confirm it's reachable at `http://localhost:11434`. The plugin also honors `OLLAMA_HOST` if your server is on another port.
 
-**`MISSING_CREDENTIAL` or `BAD_CREDENTIAL` for a hosted provider.** Run `sublime-llm: Show External Config Status` to see where each key was resolved from. On macOS, GUI apps launched from the Dock or Spotlight don't inherit your shell's environment variables — use the external config file instead, or launch Sublime from a terminal with `subl`.
+**`MISSING_CREDENTIAL` or `BAD_CREDENTIAL` for a hosted provider.** Run `LLM: Show External Config Status` to see where each key was resolved from. On macOS, GUI apps launched from the Dock or Spotlight don't inherit your shell's environment variables — use the external config file instead, or launch Sublime from a terminal with `subl`.
 
 For other issues, see the [Troubleshooting section of the README](README.md#troubleshooting).

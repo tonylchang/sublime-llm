@@ -2,8 +2,8 @@
 import json
 from typing import List
 
-from sublime_llm.logging_setup import get_logger
-from sublime_llm.providers.openai import OpenAIProvider
+from ..logging_setup import get_logger
+from .openai import OpenAIProvider
 
 _log = get_logger()
 

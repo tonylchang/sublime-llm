@@ -1,7 +1,7 @@
 """OpenRouter provider."""
 from typing import Optional
 
-from sublime_llm.providers.openai import OpenAIProvider
+from .openai import OpenAIProvider
 
 
 class OpenRouterProvider(OpenAIProvider):

@@ -10,8 +10,8 @@ except ImportError:
     sublime = None  # type: ignore
     sublime_plugin = None  # type: ignore
 
-from sublime_llm import persistence
-from sublime_llm.logging_setup import get_logger
+from . import persistence
+from .logging_setup import get_logger
 
 CHAT_VIEW_SETTING = "sublime_llm_chat_view"
 CHAT_VIEW_STREAMING_SETTING = "sublime_llm_streaming"

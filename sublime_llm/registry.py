@@ -1,12 +1,12 @@
 """Provider registry."""
-from sublime_llm.providers import Provider
-from sublime_llm.providers.anthropic import AnthropicProvider
-from sublime_llm.providers.custom import CustomOpenAIProvider
-from sublime_llm.providers.deepseek import DeepSeekProvider
-from sublime_llm.providers.ollama import OllamaProvider
-from sublime_llm.providers.openai import OpenAIProvider
-from sublime_llm.providers.openrouter import OpenRouterProvider
-from sublime_llm.settings import get_settings
+from .providers import Provider
+from .providers.anthropic import AnthropicProvider
+from .providers.custom import CustomOpenAIProvider
+from .providers.deepseek import DeepSeekProvider
+from .providers.ollama import OllamaProvider
+from .providers.openai import OpenAIProvider
+from .providers.openrouter import OpenRouterProvider
+from .settings import get_settings
 
 
 _PROVIDER_CLASSES = {

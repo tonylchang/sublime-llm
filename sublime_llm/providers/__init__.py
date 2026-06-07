@@ -1,5 +1,5 @@
 """Provider package re-exports."""
-from sublime_llm.providers.base import (
+from .base import (
     ChatMessage,
     Done,
     Provider,

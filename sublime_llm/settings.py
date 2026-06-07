@@ -117,14 +117,14 @@ class Settings:
 
     def _external_active_provider(self) -> Optional[str]:
         try:
-            from sublime_llm.secrets import get_active_provider_from_external_config
+            from .secrets import get_active_provider_from_external_config
             return get_active_provider_from_external_config()
         except Exception:
             return None
 
     def _external_provider_config(self, provider_name: str) -> dict:
         try:
-            from sublime_llm.secrets import get_provider_config
+            from .secrets import get_provider_config
             return get_provider_config(provider_name)
         except Exception:
             return {}

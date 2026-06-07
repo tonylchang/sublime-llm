@@ -3,8 +3,8 @@ import json
 import os
 from typing import Optional, Set, Tuple
 
-from sublime_llm.logging_setup import get_logger, register_secret
-from sublime_llm.settings import get_settings, is_placeholder
+from .logging_setup import get_logger, register_secret
+from .settings import get_settings, is_placeholder
 
 _CONFIG_FILENAME = "config.json"
 _SECRETS_FILENAME = "secrets.json"  # Legacy key-only file name.

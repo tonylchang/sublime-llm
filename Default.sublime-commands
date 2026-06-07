@@ -1,13 +1,13 @@
 [
-    {"caption": "sublime-llm: Open Chat", "command": "sublime_llm_open_chat"},
-    {"caption": "sublime-llm: Submit Message", "command": "sublime_llm_submit"},
-    {"caption": "sublime-llm: Send Selection to Chat", "command": "sublime_llm_send_selection"},
-    {"caption": "sublime-llm: Cancel", "command": "sublime_llm_cancel"},
-    {"caption": "sublime-llm: Clear Chat History", "command": "sublime_llm_clear_chat"},
-    {"caption": "sublime-llm: Choose Model", "command": "sublime_llm_choose_model"},
-    {"caption": "sublime-llm: Choose Provider", "command": "sublime_llm_choose_provider"},
-    {"caption": "sublime-llm: Show Status", "command": "sublime_llm_show_status"},
-    {"caption": "sublime-llm: Show External Config Status", "command": "sublime_llm_show_secret_status"},
-    {"caption": "sublime-llm: Render Last Response", "command": "sublime_llm_render_last_response"},
+    {"caption": "LLM: Open Chat", "command": "sublime_llm_open_chat"},
+    {"caption": "LLM: Submit Message", "command": "sublime_llm_submit"},
+    {"caption": "LLM: Send Selection to Chat", "command": "sublime_llm_send_selection"},
+    {"caption": "LLM: Cancel", "command": "sublime_llm_cancel"},
+    {"caption": "LLM: Clear Chat History", "command": "sublime_llm_clear_chat"},
+    {"caption": "LLM: Choose Model", "command": "sublime_llm_choose_model"},
+    {"caption": "LLM: Choose Provider", "command": "sublime_llm_choose_provider"},
+    {"caption": "LLM: Show Status", "command": "sublime_llm_show_status"},
+    {"caption": "LLM: Show External Config Status", "command": "sublime_llm_show_secret_status"},
+    {"caption": "LLM: Render Last Response", "command": "sublime_llm_render_last_response"},
     {"caption": "Preferences: LLM Settings", "command": "edit_settings", "args": {"base_file": "${packages}/LLM/sublime-llm.sublime-settings", "default": "{\n\t$0\n}\n"}}
 ]

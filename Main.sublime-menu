@@ -2,7 +2,7 @@
     {
         "id": "tools",
         "children": [
-            {"caption": "sublime-llm: Open Chat", "command": "sublime_llm_open_chat"}
+            {"caption": "LLM: Open Chat", "command": "sublime_llm_open_chat"}
         ]
     },
     {

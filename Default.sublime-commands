@@ -9,5 +9,5 @@
     {"caption": "LLM: Show Status", "command": "sublime_llm_show_status"},
     {"caption": "LLM: Show External Config Status", "command": "sublime_llm_show_secret_status"},
     {"caption": "LLM: Render Last Response", "command": "sublime_llm_render_last_response"},
-    {"caption": "Preferences: LLM Settings", "command": "edit_settings", "args": {"base_file": "${packages}/LLM/sublime-llm.sublime-settings", "default": "{\n\t$0\n}\n"}}
+    {"caption": "Preferences: LLM Settings", "command": "edit_settings", "args": {"base_file": "${packages}/LLM/LLM.sublime-settings", "default": "{\n\t$0\n}\n"}}
 ]

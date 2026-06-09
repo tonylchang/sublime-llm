@@ -36,7 +36,7 @@ Out of scope:
 
 - API keys are never logged. Every handler attached to the plugin's logger has a redacting filter applied that masks both registered keys and common API-key shapes (`sk-...`, `sk-ant-...`, `Bearer ...`).
 - The external config file (`~/.config/sublime-llm/config.json`) is created with `0600` permissions on the file and `0700` on its parent directory. The plugin warns when reading external config or legacy key-only files with looser permissions.
-- Storing keys in `sublime-llm.sublime-settings` is opt-in (`allow_secrets_in_settings_file`) and off by default; stray keys in that file are ignored at runtime with a warning.
+- Storing keys in `LLM.sublime-settings` is opt-in (`allow_secrets_in_settings_file`) and off by default; stray keys in that file are ignored at runtime with a warning.
 - The plugin makes HTTP requests only to the configured provider's base URL. There is no telemetry.
 
 See the [Security section of the README](README.md#security) for the user-facing guidance these protections enable.

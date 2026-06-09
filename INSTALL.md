@@ -137,7 +137,7 @@ rm -rf '<Packages>/LLM'   # or `unlink` if it's a symlink
 Optional cleanup of user state:
 
 - Per-project chat transcripts: `<Packages>/User/sublime-llm/chats/`
-- User overrides: `<Packages>/User/sublime-llm.sublime-settings`
+- User overrides: `<Packages>/User/LLM.sublime-settings`
 - External config file: `~/.config/sublime-llm/config.json` (macOS/Linux) or `%APPDATA%\sublime-llm\config.json` (Windows)
 - Legacy key-only file: existing `secrets.json` installs are still readable for backward compatibility; new installs should use `config.json`
 

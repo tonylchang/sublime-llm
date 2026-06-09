@@ -9,7 +9,7 @@ QUICK START (Ollama, local, no API key)
 
 SETTINGS
 
-Overrides in Packages/User/sublime-llm.sublime-settings.
+Overrides in Packages/User/LLM.sublime-settings.
 
 HOSTED PROVIDERS
 
@@ -19,7 +19,7 @@ DEEPSEEK_API_KEY, CUSTOM_API_KEY) or the external config file at
 ~/.config/sublime-llm/config.json (macOS/Linux) or
 %APPDATA%\sublime-llm\config.json (Windows).
 
-DO NOT commit your sublime-llm.sublime-settings if you set keys there. The
+DO NOT commit your LLM.sublime-settings if you set keys there. The
 plugin refuses to read keys from the settings file unless you opt in with
 "allow_secrets_in_settings_file": true.
 

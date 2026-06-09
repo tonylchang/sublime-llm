@@ -105,7 +105,7 @@ class SettingsFileFallbackTests(unittest.TestCase):
             os.chmod(self._tmp_config_path, 0o600)
 
     def test_defaults_loaded_from_file(self) -> None:
-        # The shipped sublime-llm.sublime-settings matches DEFAULTS.
+        # The shipped LLM.sublime-settings matches DEFAULTS.
         self.assertEqual(self.settings.get_provider(), DEFAULTS["provider"])
         self.assertEqual(self.settings.get_base_url(), DEFAULTS["base_url"])
         self.assertEqual(self.settings.get_temperature(), DEFAULTS["temperature"])

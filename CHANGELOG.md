@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The chat-view syntax and the settings command now resolve under the `LLM` package directory (paths were hardcoded to `sublime-llm`).
+- Renamed the settings file to `LLM.sublime-settings` (was `sublime-llm.sublime-settings`) so it matches the package name; Package Control flagged the old name because it was neither the package name nor a shipped syntax. User overrides now live in `<Packages>/User/LLM.sublime-settings`.
 
 ### Packaging
 - The plugin uses relative imports and no longer manipulates `sys.path` in `plugin.py`.

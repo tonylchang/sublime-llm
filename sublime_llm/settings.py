@@ -9,7 +9,7 @@ try:
 except ImportError:
     sublime = None  # type: ignore
 
-SETTINGS_FILENAME = "sublime-llm.sublime-settings"
+SETTINGS_FILENAME = "LLM.sublime-settings"
 _ON_CHANGE_KEY = "sublime-llm"
 
 DEFAULTS = {

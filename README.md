@@ -131,7 +131,7 @@ API keys are resolved in this order and the first match wins:
    }
    ```
 
-4. **Settings file** — `<Packages>/User/sublime-llm.sublime-settings`. **Disabled by default.** Set `"allow_secrets_in_settings_file": true` to opt in. Not recommended: this file is commonly committed to dotfiles repos and synced via cloud services. If a key is present in the settings file while the opt-in is off, the plugin logs a warning and ignores it.
+4. **Settings file** — `<Packages>/User/LLM.sublime-settings`. **Disabled by default.** Set `"allow_secrets_in_settings_file": true` to opt in. Not recommended: this file is commonly committed to dotfiles repos and synced via cloud services. If a key is present in the settings file while the opt-in is off, the plugin logs a warning and ignores it.
 
 On POSIX systems, the plugin checks external config and legacy key-only file permissions and warns if they're looser than `0600`. When the plugin itself writes the external config file, it enforces `0600` on the file and `0700` on the parent directory. **This path is outside the usual dotfiles-symlink scope and is the recommended default for most users.**
 
@@ -147,10 +147,10 @@ If you sync your Sublime user directory to git or a cloud drive, add:
 # LLM local/private config
 config.json
 secrets.json
-sublime-llm.sublime-settings
+LLM.sublime-settings
 ```
 
-If you absolutely must check in `sublime-llm.sublime-settings`, leave `allow_secrets_in_settings_file` at its default (`false`) so that any stray key in that file is ignored at runtime.
+If you absolutely must check in `LLM.sublime-settings`, leave `allow_secrets_in_settings_file` at its default (`false`) so that any stray key in that file is ignored at runtime.
 
 ## Keybindings
 
@@ -180,7 +180,7 @@ All commands are also reachable via the command palette under the `LLM: ` prefix
 
 ## Settings reference
 
-General chat settings live in `sublime-llm.sublime-settings` (defaults shipped with the plugin) and can be overridden in `<Packages>/User/sublime-llm.sublime-settings` or per-project in your `.sublime-project` file under `"settings"`. Provider-level settings can also live in the external config file under `providers.<name>`.
+General chat settings live in `LLM.sublime-settings` (defaults shipped with the plugin) and can be overridden in `<Packages>/User/LLM.sublime-settings` or per-project in your `.sublime-project` file under `"settings"`. Provider-level settings can also live in the external config file under `providers.<name>`.
 
 | Key | Default | Purpose |
 |---|---|---|
@@ -268,7 +268,7 @@ If the chat input already contains text, the selection is appended below a blank
 - **No telemetry.** The plugin makes HTTP requests only to the configured provider's base URL.
 - **Keys are resolved per-request.** Changing env vars, `config.json`, or a legacy key-only file takes effect on the next request without restarting Sublime.
 - **The external config file gets restrictive permissions** (`0600` on the file, `0700` on its directory) when the plugin writes it. The plugin warns if it reads external config or a legacy key-only file with looser permissions but does not refuse to read it.
-- **Settings-file storage is opt-in.** Keys placed in `sublime-llm.sublime-settings` are ignored unless you set `"allow_secrets_in_settings_file": true`. When that opt-in is on, the plugin emits a one-time warning that storing keys there is insecure.
+- **Settings-file storage is opt-in.** Keys placed in `LLM.sublime-settings` are ignored unless you set `"allow_secrets_in_settings_file": true`. When that opt-in is on, the plugin emits a one-time warning that storing keys there is insecure.
 - See [External provider config and API keys](#external-provider-config-and-api-keys) for the recommended storage approach.
 
 If you find a security issue, please email <tony@1x0.net> rather than opening a public issue. See [SECURITY.md](SECURITY.md) for details.

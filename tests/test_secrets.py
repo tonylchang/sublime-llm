@@ -218,6 +218,34 @@ class SecretsTests(unittest.TestCase):
         self.assertIsNone(key)
         self.assertEqual(source, "missing")
 
+    # 7b. Malformed external config warns instead of failing silently.
+    def test_malformed_config_json_warns(self) -> None:
+        with open(self._tmp_config_path, "w", encoding="utf-8") as f:
+            f.write('{"providers": {"openai": ')
+        key, source = resolve_key("openai")
+        self.assertIsNone(key)
+        self.assertEqual(source, "missing")
+        joined = "\n".join(self._records())
+        self.assertIn("is not valid JSON", joined)
+        self.assertIn(self._tmp_config_path, joined)
+
+    def test_malformed_config_json_warns_once_per_session(self) -> None:
+        with open(self._tmp_config_path, "w", encoding="utf-8") as f:
+            f.write("not json")
+        resolve_key("openai")
+        resolve_key("openai")
+        warnings = [r for r in self._records() if "is not valid JSON" in r]
+        self.assertEqual(len(warnings), 1)
+
+    def test_non_object_config_json_warns(self) -> None:
+        with open(self._tmp_config_path, "w", encoding="utf-8") as f:
+            f.write('["not", "an", "object"]')
+        key, source = resolve_key("openai")
+        self.assertIsNone(key)
+        self.assertEqual(source, "missing")
+        joined = "\n".join(self._records())
+        self.assertIn("must contain a JSON object", joined)
+
     # 8. Resolved keys get registered with the redacting logger.
     def test_resolved_key_is_registered_for_redaction(self) -> None:
         os.environ["OPENAI_API_KEY"] = "sk-redactme1234567890abcdef"

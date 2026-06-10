@@ -1,7 +1,8 @@
 [
-    // Submit the chat input. Active only inside the sublime-llm chat view.
+    // Submit the chat input. Active only inside the LLM chat view.
+    // "primary" is ctrl on Linux/Windows and cmd on macOS.
     {
-        "keys": ["ctrl+enter"],
+        "keys": ["primary+enter"],
         "command": "sublime_llm_submit",
         "context": [
             {"key": "setting.sublime_llm_chat_view", "operator": "equal", "operand": true}
@@ -18,12 +19,12 @@
     }
 
     // "Send Selection to Chat" ships without a default key binding on purpose: a
-    // global binding would clash with built-ins (ctrl+shift+l is Sublime's
+    // global binding would clash with built-ins (primary+shift+l is Sublime's
     // "Split selection into lines"). Use the command palette or right-click menu,
     // or add your own binding to Packages/User/Default.sublime-keymap, e.g.:
     //
     // {
-    //     "keys": ["ctrl+shift+l"],
+    //     "keys": ["primary+shift+l"],
     //     "command": "sublime_llm_send_selection",
     //     "context": [
     //         {"key": "selection_empty", "operator": "equal", "operand": false}

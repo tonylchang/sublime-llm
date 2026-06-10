@@ -52,10 +52,19 @@ def _read_json_file(path: str) -> dict:
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        if isinstance(data, dict):
-            return data
-    except (OSError, json.JSONDecodeError):
-        pass
+    except OSError as err:
+        _warn_once("config-read:" + path, "cannot read %s: %s; ignoring it", path, err)
+        return {}
+    except json.JSONDecodeError as err:
+        _warn_once(
+            "config-parse:" + path, "%s is not valid JSON (%s); ignoring it", path, err
+        )
+        return {}
+    if isinstance(data, dict):
+        return data
+    _warn_once(
+        "config-shape:" + path, "%s must contain a JSON object; ignoring it", path
+    )
     return {}
 
 

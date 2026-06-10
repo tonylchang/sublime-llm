@@ -79,7 +79,7 @@ class AnthropicProvider(Provider):
         if not key:
             raise ProviderError(
                 "MISSING_CREDENTIAL",
-                "Anthropic API key is not configured. Set ANTHROPIC_API_KEY or store it via sublime-llm.",
+                "Anthropic API key is not configured. Set ANTHROPIC_API_KEY or add it to config.json.",
                 False,
             )
         return {

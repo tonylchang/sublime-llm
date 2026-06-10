@@ -69,7 +69,7 @@ class OpenAIProvider(Provider):
         if not key:
             raise ProviderError(
                 "MISSING_CREDENTIAL",
-                "{0} API key is not configured. Set {1}_API_KEY or store it via sublime-llm.".format(
+                "{0} API key is not configured. Set {1}_API_KEY or add it to config.json.".format(
                     self._provider_label,
                     self._secret_provider_name.upper(),
                 ),

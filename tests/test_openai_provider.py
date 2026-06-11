@@ -3,18 +3,19 @@ import io
 import json
 import socket
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import (
     ChatMessage,
     Done,
     ProviderError,
     ProviderHealth,
     TextDelta,
 )
-from sublime_llm.providers.openai import OpenAIProvider
+from LLM.sublime_llm.providers.openai import OpenAIProvider
 
 
 _TEST_KEY_ENV = {"OPENAI_API_KEY": "sk-test12345abcdef"}
@@ -49,7 +50,7 @@ def _make_provider(settings: dict = None) -> OpenAIProvider:
 
 def _patch_no_secret_file():
     return mock.patch(
-        "sublime_llm.secrets._read_secrets_file",
+        "LLM.sublime_llm.secrets._read_secrets_file",
         return_value={},
     )
 
@@ -58,7 +59,7 @@ def _patch_env(env: dict):
     return mock.patch.dict("os.environ", env, clear=False)
 
 
-class BaseUrlTests(unittest.TestCase):
+class BaseUrlTests(DeferrableTestCase):
     def test_default_url(self) -> None:
         p = _make_provider({})
         self.assertEqual(p.base_url, "https://api.openai.com/v1")
@@ -68,10 +69,10 @@ class BaseUrlTests(unittest.TestCase):
         self.assertEqual(p.base_url, "https://example.com/v1")
 
 
-class IsAvailableTests(unittest.TestCase):
+class IsAvailableTests(DeferrableTestCase):
     def test_is_available_no_key(self) -> None:
         with _patch_env({"OPENAI_API_KEY": ""}), _patch_no_secret_file(), \
-             mock.patch("sublime_llm.providers.openai.urllib.request.urlopen") as urlopen:
+             mock.patch("LLM.sublime_llm.providers.openai.urllib.request.urlopen") as urlopen:
             p = _make_provider()
             self.assertEqual(p.is_available(), ProviderHealth.MISSING_CREDENTIAL)
             urlopen.assert_not_called()
@@ -79,7 +80,7 @@ class IsAvailableTests(unittest.TestCase):
     def test_is_available_ok(self) -> None:
         body = json.dumps({"data": []}).encode("utf-8")
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -94,7 +95,7 @@ class IsAvailableTests(unittest.TestCase):
             fp=io.BytesIO(b"bad key"),
         )
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -102,20 +103,20 @@ class IsAvailableTests(unittest.TestCase):
 
     def test_is_available_connection_refused(self) -> None:
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
             self.assertEqual(p.is_available(), ProviderHealth.UNREACHABLE)
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_list_models_sorted(self) -> None:
         body = json.dumps(
             {"data": [{"id": "gpt-4o"}, {"id": "gpt-3.5-turbo"}, {"id": "gpt-4"}]}
         ).encode("utf-8")
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -123,27 +124,27 @@ class ListModelsTests(unittest.TestCase):
 
     def test_list_models_no_key(self) -> None:
         with _patch_env({"OPENAI_API_KEY": ""}), _patch_no_secret_file(), \
-             mock.patch("sublime_llm.providers.openai.urllib.request.urlopen") as urlopen:
+             mock.patch("LLM.sublime_llm.providers.openai.urllib.request.urlopen") as urlopen:
             p = _make_provider()
             self.assertEqual(p.list_models(), [])
             urlopen.assert_not_called()
 
     def test_list_models_error_returns_empty(self) -> None:
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
             self.assertEqual(p.list_models(), [])
 
 
-class CompleteTests(unittest.TestCase):
+class CompleteTests(DeferrableTestCase):
     def test_complete_success(self) -> None:
         body = json.dumps(
             {"choices": [{"message": {"role": "assistant", "content": "hi there"}}]}
         ).encode("utf-8")
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -164,7 +165,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"bad key"),
         )
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -187,7 +188,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"rate limited"),
         )
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -210,7 +211,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"no such model"),
         )
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -233,7 +234,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"boom"),
         )
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -260,7 +261,7 @@ class CompleteTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "MISSING_CREDENTIAL")
 
 
-class StreamTests(unittest.TestCase):
+class StreamTests(DeferrableTestCase):
     def _stream_body(self) -> bytes:
         chunks = [
             "data: " + json.dumps(
@@ -282,7 +283,7 @@ class StreamTests(unittest.TestCase):
 
     def test_stream_yields_deltas_and_done(self) -> None:
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=self._stream_body(), status=200),
         ):
             p = _make_provider()
@@ -306,7 +307,7 @@ class StreamTests(unittest.TestCase):
         cancel = threading.Event()
 
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=resp,
         ):
             p = _make_provider()
@@ -328,7 +329,7 @@ class StreamTests(unittest.TestCase):
 
     def test_stream_connection_refused(self) -> None:
         with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
@@ -341,7 +342,3 @@ class StreamTests(unittest.TestCase):
             with self.assertRaises(ProviderError) as cm:
                 list(gen)
             self.assertEqual(cm.exception.code, "UNREACHABLE")
-
-
-if __name__ == "__main__":
-    unittest.main()

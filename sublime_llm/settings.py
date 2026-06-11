@@ -1,13 +1,8 @@
 """Settings reader for sublime-llm."""
-import json
-import os
 import re
 from typing import Any, Callable, List, Optional
 
-try:
-    import sublime  # type: ignore
-except ImportError:
-    sublime = None  # type: ignore
+import sublime
 
 SETTINGS_FILENAME = "LLM.sublime-settings"
 _ON_CHANGE_KEY = "sublime-llm"
@@ -40,70 +35,11 @@ def is_placeholder(value: Any) -> bool:
     return False
 
 
-def _strip_json_comments(text: str) -> str:
-    out = []
-    i = 0
-    n = len(text)
-    in_string = False
-    escape = False
-    while i < n:
-        c = text[i]
-        if in_string:
-            out.append(c)
-            if escape:
-                escape = False
-            elif c == "\\":
-                escape = True
-            elif c == '"':
-                in_string = False
-            i += 1
-            continue
-        if c == '"':
-            in_string = True
-            out.append(c)
-            i += 1
-            continue
-        if c == "/" and i + 1 < n:
-            nxt = text[i + 1]
-            if nxt == "/":
-                while i < n and text[i] != "\n":
-                    i += 1
-                continue
-            if nxt == "*":
-                i += 2
-                while i + 1 < n and not (text[i] == "*" and text[i + 1] == "/"):
-                    i += 1
-                i += 2
-                continue
-        out.append(c)
-        i += 1
-    return "".join(out)
-
-
-def _load_from_file() -> dict:
-    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    path = os.path.join(here, SETTINGS_FILENAME)
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        raw = f.read()
-    try:
-        return json.loads(_strip_json_comments(raw))
-    except json.JSONDecodeError:
-        return {}
-
-
 class Settings:
     def __init__(self) -> None:
         self._callbacks: List[Callable[[], None]] = []
-        self._sublime_settings = None
-        self._file_cache: Optional[dict] = None
-        if sublime is not None:
-            try:
-                self._sublime_settings = sublime.load_settings(SETTINGS_FILENAME)
-                self._sublime_settings.add_on_change(_ON_CHANGE_KEY, self._on_change)
-            except Exception:
-                self._sublime_settings = None
+        self._sublime_settings = sublime.load_settings(SETTINGS_FILENAME)
+        self._sublime_settings.add_on_change(_ON_CHANGE_KEY, self._on_change)
 
     def _on_change(self) -> None:
         for cb in list(self._callbacks):
@@ -130,12 +66,7 @@ class Settings:
             return {}
 
     def _get_without_external(self, key: str) -> Any:
-        default = DEFAULTS.get(key)
-        if self._sublime_settings is not None:
-            return self._sublime_settings.get(key, default)
-        if self._file_cache is None:
-            self._file_cache = _load_from_file()
-        return self._file_cache.get(key, default)
+        return self._sublime_settings.get(key, DEFAULTS.get(key))
 
     def _external_value_for_key(self, key: str):
         provider = self._external_active_provider() or self._get_without_external("provider")
@@ -180,12 +111,7 @@ class Settings:
             return external
         # Fall back through DEFAULTS so callers see the same values that the
         # typed accessors (get_provider, etc.) return.
-        fallback = DEFAULTS.get(key, default)
-        if self._sublime_settings is not None:
-            return self._sublime_settings.get(key, fallback)
-        if self._file_cache is None:
-            self._file_cache = _load_from_file()
-        return self._file_cache.get(key, fallback)
+        return self._sublime_settings.get(key, DEFAULTS.get(key, default))
 
     def get_provider(self) -> str:
         return str(self._get("provider"))

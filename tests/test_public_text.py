@@ -1,13 +1,14 @@
 """Static checks for public/user-facing text."""
 from pathlib import Path
 import re
-import unittest
+
+from unittesting import DeferrableTestCase
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class PublicTextTests(unittest.TestCase):
+class PublicTextTests(DeferrableTestCase):
     def test_status_messages_use_llm_prefix(self) -> None:
         # User-facing status messages carry the "LLM:" brand prefix, not the
         # old "sublime-llm:" one.
@@ -57,7 +58,3 @@ class PublicTextTests(unittest.TestCase):
                 if pattern in text:
                     offenders.append(f"{path.relative_to(ROOT)} contains {pattern!r}")
         self.assertEqual(offenders, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

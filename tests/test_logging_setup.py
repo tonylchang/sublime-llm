@@ -1,9 +1,10 @@
 """Tests for sublime_llm.logging_setup."""
 import logging
-import unittest
 
-from sublime_llm import logging_setup
-from sublime_llm.logging_setup import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm import logging_setup
+from LLM.sublime_llm.logging_setup import (
     SecretRedactFilter,
     get_logger,
     register_secret,
@@ -20,7 +21,7 @@ class _ListHandler(logging.Handler):
         self.records.append(self.format(record))
 
 
-class LoggingSetupTests(unittest.TestCase):
+class LoggingSetupTests(DeferrableTestCase):
     def setUp(self) -> None:
         self.logger = get_logger()
         self.handler = _ListHandler()
@@ -72,7 +73,3 @@ class LoggingSetupTests(unittest.TestCase):
     def test_non_string_args_do_not_crash(self) -> None:
         self.logger.info("count=%d size=%d", 5, 10)
         self.assertIn("count=5 size=10", self._last())
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -3,12 +3,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
-try:
-    import sublime  # type: ignore
-    import sublime_plugin  # type: ignore
-except ImportError:
-    sublime = None  # type: ignore
-    sublime_plugin = None  # type: ignore
+import sublime
+import sublime_plugin
 
 from . import persistence
 from .logging_setup import get_logger
@@ -162,10 +158,9 @@ class ChatView:
             loaded = None
         if loaded:
             view.run_command("sublime_llm_append", {"text": loaded})
-            if sublime is not None:
-                view.sel().clear()
-                view.sel().add(sublime.Region(view.size()))
-                view.show(view.size())
+            view.sel().clear()
+            view.sel().add(sublime.Region(view.size()))
+            view.show(view.size())
         else:
             chat_view.init_template()
         return chat_view
@@ -173,15 +168,12 @@ class ChatView:
     def init_template(self) -> None:
         view = self._view
         view.run_command("sublime_llm_append", {"text": "<user> "})
-        if sublime is not None:
-            view.sel().clear()
-            view.sel().add(sublime.Region(view.size()))
-            view.show(view.size())
+        view.sel().clear()
+        view.sel().add(sublime.Region(view.size()))
+        view.show(view.size())
 
     def read_input(self) -> str:
         view = self._view
-        if sublime is None:
-            return ""
         text = view.substr(sublime.Region(0, view.size()))
         # Accept the current "<user> " marker plus two legacy variants so
         # older saved chats still load: the previous "<user>\n" form and the
@@ -209,8 +201,6 @@ class ChatView:
     def _append_streamed(self, text: str) -> None:
         view = self._view
         view.run_command("sublime_llm_append", {"text": text})
-        if sublime is None:
-            return
         try:
             visible_end = view.visible_region().end()
         except Exception:
@@ -223,25 +213,15 @@ class ChatView:
         view.run_command(
             "sublime_llm_append", {"text": "\n<user> ", "trim_trailing": True}
         )
-        if sublime is None:
-            return
         view.sel().clear()
         view.sel().add(sublime.Region(view.size()))
         view.show(view.size())
-
-
-# Event listener defined here to keep the chat-view lifecycle in one module.
-# MVP: only clears the registry on chat-view close. The group-collapse cascade bug
-# described in PLAN section 4 may still manifest; deferred to a later ticket.
-_EventListenerBase = sublime_plugin.EventListener if sublime_plugin is not None else object
 
 
 _PROTECT_MARKERS = ("<user> ", "<user>\n", "### User\n")
 
 
 def _input_region_start(view) -> int:
-    if sublime is None:
-        return -1
     text = view.substr(sublime.Region(0, view.size()))
     best = -1
     for marker in _PROTECT_MARKERS:
@@ -269,7 +249,10 @@ def _update_protection(view) -> None:
     view.set_read_only(not all_in_input)
 
 
-class ChatViewEvents(_EventListenerBase):  # type: ignore[misc,valid-type]
+# Event listener defined here to keep the chat-view lifecycle in one module.
+# MVP: only clears the registry on chat-view close. The group-collapse cascade bug
+# described in PLAN section 4 may still manifest; deferred to a later ticket.
+class ChatViewEvents(sublime_plugin.EventListener):
     def on_selection_modified(self, view) -> None:
         try:
             _update_protection(view)
@@ -307,12 +290,11 @@ class ChatViewEvents(_EventListenerBase):  # type: ignore[misc,valid-type]
         window = view.window()
         if window is None:
             return
-        if sublime is not None:
-            try:
-                text = view.substr(sublime.Region(0, view.size()))
-                persistence.save_chat(window, text)
-            except Exception:
-                get_logger().warning("chat persistence: save on view close failed")
+        try:
+            text = view.substr(sublime.Region(0, view.size()))
+            persistence.save_chat(window, text)
+        except Exception:
+            get_logger().warning("chat persistence: save on view close failed")
         wid = window.id()
         handle = _registry.get(wid)
         if handle is not None and handle.view_id == view.id():
@@ -325,13 +307,12 @@ class ChatViewEvents(_EventListenerBase):  # type: ignore[misc,valid-type]
             wid = window.id()
         except Exception:
             return
-        if sublime is not None:
-            try:
-                chat = ChatView.find(window)
-                if chat is not None:
-                    view = chat.get_view()
-                    text = view.substr(sublime.Region(0, view.size()))
-                    persistence.save_chat(window, text)
-            except Exception:
-                get_logger().warning("chat persistence: save on window close failed")
+        try:
+            chat = ChatView.find(window)
+            if chat is not None:
+                view = chat.get_view()
+                text = view.substr(sublime.Region(0, view.size()))
+                persistence.save_chat(window, text)
+        except Exception:
+            get_logger().warning("chat persistence: save on window close failed")
         _registry.pop(wid, None)

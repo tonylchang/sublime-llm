@@ -2,54 +2,20 @@
 import json
 import os
 import tempfile
-import unittest
 from unittest import mock
 
-from sublime_llm import settings as settings_mod
-from sublime_llm.settings import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm import settings as settings_mod
+from LLM.sublime_llm.settings import (
     DEFAULTS,
     Settings,
-    _strip_json_comments,
     get_settings,
     is_placeholder,
 )
 
 
-class StripJsonCommentsTests(unittest.TestCase):
-    def test_strips_line_comments(self) -> None:
-        text = '{\n  // comment line\n  "x": 1 // trailing\n}'
-        result = _strip_json_comments(text)
-        self.assertNotIn("comment", result)
-        self.assertNotIn("trailing", result)
-        self.assertEqual(json_loads(result), {"x": 1})
-
-    def test_strips_block_comments(self) -> None:
-        text = '{ /* block */ "x": 1 /* multi\nline */ }'
-        result = _strip_json_comments(text)
-        self.assertEqual(json_loads(result), {"x": 1})
-
-    def test_preserves_double_slash_inside_strings(self) -> None:
-        text = '{"base_url": "http://localhost:11434"}'
-        result = _strip_json_comments(text)
-        self.assertEqual(json_loads(result), {"base_url": "http://localhost:11434"})
-
-    def test_preserves_url_with_trailing_comment(self) -> None:
-        text = '{"base_url": "http://example.com"} // note'
-        result = _strip_json_comments(text)
-        self.assertEqual(json_loads(result), {"base_url": "http://example.com"})
-
-    def test_handles_escaped_quote_in_string(self) -> None:
-        text = '{"q": "say \\"//\\" not comment"}'
-        result = _strip_json_comments(text)
-        self.assertEqual(json_loads(result), {"q": 'say "//" not comment'})
-
-
-def json_loads(s: str):
-    import json
-    return json.loads(s)
-
-
-class PlaceholderTests(unittest.TestCase):
+class PlaceholderTests(DeferrableTestCase):
     def test_replace_me_is_placeholder(self) -> None:
         self.assertTrue(is_placeholder("sk-REPLACE_ME"))
         self.assertTrue(is_placeholder("replace_me"))
@@ -75,14 +41,21 @@ class PlaceholderTests(unittest.TestCase):
         self.assertFalse(is_placeholder("ollama"))
 
 
-class SettingsFileFallbackTests(unittest.TestCase):
+class _EmptySettings:
+    """Stands in for a sublime.Settings object with no keys set."""
+
+    def get(self, key, default=None):
+        return default
+
+
+class SettingsTests(DeferrableTestCase):
     def setUp(self) -> None:
-        # Ensure fresh settings instance reading from file (sublime is None in tests).
+        # Ensure a fresh settings instance for each test.
         settings_mod._instance = None
         self._tmpdir = tempfile.mkdtemp()
         self._tmp_config_path = os.path.join(self._tmpdir, "config.json")
         self._config_path_patch = mock.patch(
-            "sublime_llm.secrets.get_external_config_file_path",
+            "LLM.sublime_llm.secrets.get_external_config_file_path",
             return_value=self._tmp_config_path,
         )
         self._config_path_patch.start()
@@ -104,7 +77,7 @@ class SettingsFileFallbackTests(unittest.TestCase):
         if os.name != "nt":
             os.chmod(self._tmp_config_path, 0o600)
 
-    def test_defaults_loaded_from_file(self) -> None:
+    def test_defaults_loaded_from_shipped_settings(self) -> None:
         # The shipped LLM.sublime-settings matches DEFAULTS.
         self.assertEqual(self.settings.get_provider(), DEFAULTS["provider"])
         self.assertEqual(self.settings.get_base_url(), DEFAULTS["base_url"])
@@ -115,8 +88,8 @@ class SettingsFileFallbackTests(unittest.TestCase):
         self.assertEqual(self.settings.get_model(), "llama3.2")
 
     def test_missing_key_returns_default(self) -> None:
-        # Force an empty file cache to simulate a missing key.
-        self.settings._file_cache = {}
+        # Swap in an empty settings object to simulate missing keys.
+        self.settings._sublime_settings = _EmptySettings()
         self.assertEqual(self.settings.get_provider(), DEFAULTS["provider"])
         self.assertEqual(self.settings.get_max_tokens(), DEFAULTS["max_tokens"])
 
@@ -128,7 +101,7 @@ class SettingsFileFallbackTests(unittest.TestCase):
     def test_add_on_change_callback_registered(self) -> None:
         calls = []
         self.settings.add_on_change(lambda: calls.append(1))
-        # Directly invoke internal notifier (sublime hook not available in tests).
+        # Directly invoke the internal notifier rather than touching settings on disk.
         self.settings._on_change()
         self.assertEqual(calls, [1])
 
@@ -171,7 +144,3 @@ class SettingsFileFallbackTests(unittest.TestCase):
         self.assertEqual(self.settings.get("openai_model"), "gpt-test")
         self.assertEqual(self.settings.get("openrouter_referer"), "https://example.com")
         self.assertEqual(self.settings.get("openrouter_title"), "Sublime LLM")
-
-
-if __name__ == "__main__":
-    unittest.main()

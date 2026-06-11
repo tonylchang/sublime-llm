@@ -1,10 +1,11 @@
 """Tests for the markdown-to-minihtml renderer."""
-import unittest
 
-from sublime_llm.markdown_render import md_to_html, wrap_minihtml
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.markdown_render import md_to_html, wrap_minihtml
 
 
-class MarkdownRenderTests(unittest.TestCase):
+class MarkdownRenderTests(DeferrableTestCase):
     def test_paragraph(self):
         html = md_to_html("hello world")
         self.assertIn("<p>hello world</p>", html)
@@ -76,7 +77,3 @@ class MarkdownRenderTests(unittest.TestCase):
         self.assertTrue(wrapped.startswith("<html><body>"))
         self.assertIn("<style>", wrapped)
         self.assertIn("<p>hi</p>", wrapped)
-
-
-if __name__ == "__main__":
-    unittest.main()

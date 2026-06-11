@@ -2,18 +2,19 @@
 import io
 import json
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import (
     ChatMessage,
     Done,
     ProviderError,
     ProviderHealth,
     TextDelta,
 )
-from sublime_llm.providers.anthropic import AnthropicProvider
+from LLM.sublime_llm.providers.anthropic import AnthropicProvider
 
 
 class MockResponse:
@@ -46,7 +47,7 @@ def _make_provider() -> AnthropicProvider:
 _KEY_ENV = {"ANTHROPIC_API_KEY": "sk-ant-test123abcdefghijklmnop"}
 
 
-class TranslateMessagesTests(unittest.TestCase):
+class TranslateMessagesTests(DeferrableTestCase):
     def test_extract_and_concatenate_system(self) -> None:
         p = _make_provider()
         msgs = [
@@ -78,11 +79,11 @@ class TranslateMessagesTests(unittest.TestCase):
         self.assertEqual(len(out), 2)
 
 
-class IsAvailableTests(unittest.TestCase):
+class IsAvailableTests(DeferrableTestCase):
     def test_no_key_missing_credential(self) -> None:
         with mock.patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}, clear=False):
             with mock.patch(
-                "sublime_llm.providers.anthropic.resolve_key",
+                "LLM.sublime_llm.providers.anthropic.resolve_key",
                 return_value=(None, "missing"),
             ):
                 p = _make_provider()
@@ -91,14 +92,14 @@ class IsAvailableTests(unittest.TestCase):
     def test_with_key_ok(self) -> None:
         with mock.patch.dict("os.environ", _KEY_ENV, clear=False):
             with mock.patch(
-                "sublime_llm.providers.anthropic.resolve_key",
+                "LLM.sublime_llm.providers.anthropic.resolve_key",
                 return_value=(_KEY_ENV["ANTHROPIC_API_KEY"], "env"),
             ):
                 p = _make_provider()
                 self.assertEqual(p.is_available(), ProviderHealth.OK)
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_default_list(self) -> None:
         p = _make_provider()
         models = p.list_models()
@@ -114,10 +115,10 @@ class ListModelsTests(unittest.TestCase):
         self.assertEqual(p.list_models(), custom)
 
 
-class CompleteTests(unittest.TestCase):
+class CompleteTests(DeferrableTestCase):
     def _resolve_patch(self):
         return mock.patch(
-            "sublime_llm.providers.anthropic.resolve_key",
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
             return_value=(_KEY_ENV["ANTHROPIC_API_KEY"], "env"),
         )
 
@@ -132,7 +133,7 @@ class CompleteTests(unittest.TestCase):
             }
         ).encode("utf-8")
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -157,7 +158,7 @@ class CompleteTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = _make_provider()
@@ -192,7 +193,7 @@ class CompleteTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = _make_provider()
@@ -218,7 +219,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_401(self) -> None:
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=self._http_error(401),
         ):
             p = _make_provider()
@@ -234,7 +235,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_429(self) -> None:
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=self._http_error(429),
         ):
             p = _make_provider()
@@ -250,7 +251,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_404(self) -> None:
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=self._http_error(404),
         ):
             p = _make_provider()
@@ -266,7 +267,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_529(self) -> None:
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             side_effect=self._http_error(529),
         ):
             p = _make_provider()
@@ -282,7 +283,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_missing_credential(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.anthropic.resolve_key",
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
             return_value=(None, "missing"),
         ):
             p = _make_provider()
@@ -296,10 +297,10 @@ class CompleteTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "MISSING_CREDENTIAL")
 
 
-class StreamTests(unittest.TestCase):
+class StreamTests(DeferrableTestCase):
     def _resolve_patch(self):
         return mock.patch(
-            "sublime_llm.providers.anthropic.resolve_key",
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
             return_value=(_KEY_ENV["ANTHROPIC_API_KEY"], "env"),
         )
 
@@ -356,7 +357,7 @@ class StreamTests(unittest.TestCase):
     def test_stream_happy_path(self) -> None:
         body = self._happy_sse()
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -400,7 +401,7 @@ class StreamTests(unittest.TestCase):
         body = ("\n".join(parts) + "\n").encode("utf-8")
 
         with self._resolve_patch(), mock.patch(
-            "sublime_llm.providers.anthropic.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -418,7 +419,3 @@ class StreamTests(unittest.TestCase):
             # First delta should have been yielded before error.
             self.assertEqual(len(collected), 1)
             self.assertIsInstance(collected[0], TextDelta)
-
-
-if __name__ == "__main__":
-    unittest.main()

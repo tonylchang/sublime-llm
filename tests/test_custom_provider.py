@@ -2,13 +2,14 @@
 import io
 import json
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import ChatMessage
-from sublime_llm.providers.base import ProviderHealth
-from sublime_llm.providers.custom import CustomOpenAIProvider
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import ChatMessage
+from LLM.sublime_llm.providers.base import ProviderHealth
+from LLM.sublime_llm.providers.custom import CustomOpenAIProvider
 
 
 class MockResponse:
@@ -35,7 +36,7 @@ class MockResponse:
 
 def _patch_no_secret_file():
     return mock.patch(
-        "sublime_llm.secrets._read_secrets_file",
+        "LLM.sublime_llm.secrets._read_secrets_file",
         return_value={},
     )
 
@@ -50,7 +51,7 @@ def _custom_key():
     )
 
 
-class BaseUrlTests(unittest.TestCase):
+class BaseUrlTests(DeferrableTestCase):
     def test_missing_base_url_is_misconfigured(self) -> None:
         with _no_custom_key(), _patch_no_secret_file():
             p = CustomOpenAIProvider({})
@@ -64,7 +65,7 @@ class BaseUrlTests(unittest.TestCase):
             self.assertEqual(p.base_url, "http://localhost:1234/v1")
 
 
-class HeaderTests(unittest.TestCase):
+class HeaderTests(DeferrableTestCase):
     def test_with_key_sends_authorization(self) -> None:
         body = json.dumps(
             {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
@@ -76,7 +77,7 @@ class HeaderTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with _custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = CustomOpenAIProvider({"custom_base_url": "http://localhost:1234/v1"})
@@ -101,7 +102,7 @@ class HeaderTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with _no_custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = CustomOpenAIProvider({"custom_base_url": "http://localhost:1234/v1"})
@@ -118,7 +119,7 @@ class HeaderTests(unittest.TestCase):
         self.assertEqual(out, "ok")
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_list_models_404_falls_back_to_configured(self) -> None:
         err = urllib.error.HTTPError(
             url="http://localhost:1234/v1/models",
@@ -128,7 +129,7 @@ class ListModelsTests(unittest.TestCase):
             fp=io.BytesIO(b"nope"),
         )
         with _no_custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = CustomOpenAIProvider(
@@ -144,7 +145,7 @@ class ListModelsTests(unittest.TestCase):
             {"data": [{"id": "local-llama-3"}, {"id": "local-mistral"}]}
         ).encode("utf-8")
         with _no_custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = CustomOpenAIProvider(
@@ -161,14 +162,14 @@ class ListModelsTests(unittest.TestCase):
             fp=io.BytesIO(b"nope"),
         )
         with _no_custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = CustomOpenAIProvider({"custom_base_url": "http://localhost:1234/v1"})
             self.assertEqual(p.list_models(), [])
 
 
-class LabelTests(unittest.TestCase):
+class LabelTests(DeferrableTestCase):
     def test_custom_label_used_in_errors(self) -> None:
         err = urllib.error.HTTPError(
             url="http://localhost:1234/v1/chat/completions",
@@ -177,9 +178,9 @@ class LabelTests(unittest.TestCase):
             hdrs=None,
             fp=io.BytesIO(b"rate limited"),
         )
-        from sublime_llm.providers import ProviderError as _PE
+        from LLM.sublime_llm.providers import ProviderError as _PE
         with _no_custom_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = CustomOpenAIProvider(
@@ -196,7 +197,3 @@ class LabelTests(unittest.TestCase):
                     threading.Event(),
                 )
             self.assertIn("LM Studio", cm.exception.message)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,7 +1,8 @@
 """Tests for sublime_llm.providers.base."""
-import unittest
 
-from sublime_llm.providers import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import (
     ChatMessage,
     Done,
     Provider,
@@ -11,13 +12,13 @@ from sublime_llm.providers import (
 )
 
 
-class ProviderAbstractTests(unittest.TestCase):
+class ProviderAbstractTests(DeferrableTestCase):
     def test_provider_is_abstract(self) -> None:
         with self.assertRaises(TypeError):
             Provider({})  # type: ignore[abstract]
 
 
-class ChatMessageTests(unittest.TestCase):
+class ChatMessageTests(DeferrableTestCase):
     def test_valid_roles(self) -> None:
         ChatMessage("system", "hi")
         ChatMessage("user", "hi")
@@ -28,7 +29,7 @@ class ChatMessageTests(unittest.TestCase):
             ChatMessage("bogus", "x")
 
 
-class ProviderErrorTests(unittest.TestCase):
+class ProviderErrorTests(DeferrableTestCase):
     def test_str_returns_message(self) -> None:
         err = ProviderError("UNREACHABLE", "msg", False)
         self.assertEqual(str(err), "msg")
@@ -44,7 +45,7 @@ class ProviderErrorTests(unittest.TestCase):
         self.assertFalse(err.retryable)
 
 
-class EventTypeTests(unittest.TestCase):
+class EventTypeTests(DeferrableTestCase):
     def test_text_delta(self) -> None:
         d = TextDelta(text="hello")
         self.assertEqual(d.text, "hello")
@@ -59,13 +60,9 @@ class EventTypeTests(unittest.TestCase):
         self.assertIsNone(d.usage)
 
 
-class ProviderHealthTests(unittest.TestCase):
+class ProviderHealthTests(DeferrableTestCase):
     def test_members(self) -> None:
         self.assertTrue(hasattr(ProviderHealth, "OK"))
         self.assertTrue(hasattr(ProviderHealth, "UNREACHABLE"))
         self.assertTrue(hasattr(ProviderHealth, "MISSING_CREDENTIAL"))
         self.assertTrue(hasattr(ProviderHealth, "MISCONFIGURED"))
-
-
-if __name__ == "__main__":
-    unittest.main()

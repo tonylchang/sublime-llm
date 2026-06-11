@@ -2,20 +2,21 @@
 import json
 import os
 import tempfile
-import unittest
 from unittest import mock
 
-from sublime_llm import settings as settings_mod
-from sublime_llm.providers.anthropic import AnthropicProvider
-from sublime_llm.providers.custom import CustomOpenAIProvider
-from sublime_llm.providers.deepseek import DeepSeekProvider
-from sublime_llm.providers.ollama import OllamaProvider
-from sublime_llm.providers.openai import OpenAIProvider
-from sublime_llm.providers.openrouter import OpenRouterProvider
-from sublime_llm.registry import get_active_provider, get_provider
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm import settings as settings_mod
+from LLM.sublime_llm.providers.anthropic import AnthropicProvider
+from LLM.sublime_llm.providers.custom import CustomOpenAIProvider
+from LLM.sublime_llm.providers.deepseek import DeepSeekProvider
+from LLM.sublime_llm.providers.ollama import OllamaProvider
+from LLM.sublime_llm.providers.openai import OpenAIProvider
+from LLM.sublime_llm.providers.openrouter import OpenRouterProvider
+from LLM.sublime_llm.registry import get_active_provider, get_provider
 
 
-class GetProviderTests(unittest.TestCase):
+class GetProviderTests(DeferrableTestCase):
     def test_ollama(self) -> None:
         p = get_provider("ollama", {})
         self.assertIsInstance(p, OllamaProvider)
@@ -50,13 +51,13 @@ class GetProviderTests(unittest.TestCase):
             get_provider("bogus", {})
 
 
-class ActiveProviderExternalConfigTests(unittest.TestCase):
+class ActiveProviderExternalConfigTests(DeferrableTestCase):
     def setUp(self) -> None:
         settings_mod._instance = None
         self._tmpdir = tempfile.mkdtemp()
         self._tmp_config_path = os.path.join(self._tmpdir, "config.json")
         self._patch = mock.patch(
-            "sublime_llm.secrets.get_external_config_file_path",
+            "LLM.sublime_llm.secrets.get_external_config_file_path",
             return_value=self._tmp_config_path,
         )
         self._patch.start()
@@ -92,7 +93,3 @@ class ActiveProviderExternalConfigTests(unittest.TestCase):
         p = get_active_provider()
         self.assertIsInstance(p, OllamaProvider)
         self.assertEqual(p.base_url, "http://llm-box:11434")
-
-
-if __name__ == "__main__":
-    unittest.main()

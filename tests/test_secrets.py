@@ -3,12 +3,13 @@ import json
 import logging
 import os
 import tempfile
-import unittest
 from unittest import mock
 
-from sublime_llm import logging_setup, secrets, settings as settings_mod
-from sublime_llm.logging_setup import SecretRedactFilter, get_logger
-from sublime_llm.secrets import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm import logging_setup, secrets, settings as settings_mod
+from LLM.sublime_llm.logging_setup import SecretRedactFilter, get_logger
+from LLM.sublime_llm.secrets import (
     get_external_config_file_path,
     get_provider_config,
     get_secrets_file_path,
@@ -34,7 +35,7 @@ class _FakeSettings:
         return self._values.get(key, default)
 
 
-class SecretsTests(unittest.TestCase):
+class SecretsTests(DeferrableTestCase):
     def setUp(self) -> None:
         # Reset module state.
         secrets._session_warned.clear()
@@ -287,7 +288,7 @@ class SecretsTests(unittest.TestCase):
         self.assertEqual(data["providers"]["anthropic"], {"api_key": "b"})
 
 
-class GetSecretsFilePathTests(unittest.TestCase):
+class GetSecretsFilePathTests(DeferrableTestCase):
     def test_path_is_absolute(self) -> None:
         # Smoke test: path should be platform-appropriate and absolute-ish
         # (expanduser may leave a relative path only if HOME unset, edge case).
@@ -297,7 +298,3 @@ class GetSecretsFilePathTests(unittest.TestCase):
         config_path = get_external_config_file_path()
         self.assertTrue(config_path.endswith("config.json"))
         self.assertIn("sublime-llm", config_path)
-
-
-if __name__ == "__main__":
-    unittest.main()

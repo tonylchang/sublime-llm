@@ -2,10 +2,11 @@
 import hashlib
 import os
 import tempfile
-import unittest
 from unittest import mock
 
-from sublime_llm import persistence
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm import persistence
 
 
 class FakeWindow:
@@ -20,7 +21,7 @@ class FakeWindow:
         return self._win_id
 
 
-class PersistenceTests(unittest.TestCase):
+class PersistenceTests(DeferrableTestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
@@ -135,7 +136,3 @@ class PersistenceTests(unittest.TestCase):
         # Re-computing must match (deterministic).
         again = persistence.get_chat_path(FakeWindow(project=project))
         self.assertEqual(path, again)
-
-
-if __name__ == "__main__":
-    unittest.main()

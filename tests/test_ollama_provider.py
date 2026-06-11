@@ -3,18 +3,19 @@ import io
 import json
 import socket
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import (
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import (
     ChatMessage,
     Done,
     ProviderError,
     ProviderHealth,
     TextDelta,
 )
-from sublime_llm.providers.ollama import OllamaProvider
+from LLM.sublime_llm.providers.ollama import OllamaProvider
 
 
 class MockResponse:
@@ -44,7 +45,7 @@ def _make_provider(base_url: str = "http://localhost:11434") -> OllamaProvider:
     return OllamaProvider({"base_url": base_url})
 
 
-class BaseUrlNormalizationTests(unittest.TestCase):
+class BaseUrlNormalizationTests(DeferrableTestCase):
     def test_default_used(self) -> None:
         p = OllamaProvider({})
         self.assertEqual(p.base_url, "http://localhost:11434")
@@ -59,11 +60,11 @@ class BaseUrlNormalizationTests(unittest.TestCase):
             self.assertEqual(p.base_url, "http://0.0.0.0:11434")
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_list_models_success(self) -> None:
         body = json.dumps({"models": [{"name": "llama3"}, {"name": "mistral"}]}).encode("utf-8")
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -71,18 +72,18 @@ class ListModelsTests(unittest.TestCase):
 
     def test_list_models_error_returns_empty(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
             self.assertEqual(p.list_models(), [])
 
 
-class IsAvailableTests(unittest.TestCase):
+class IsAvailableTests(DeferrableTestCase):
     def test_is_available_ok(self) -> None:
         body = json.dumps({"models": []}).encode("utf-8")
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -90,7 +91,7 @@ class IsAvailableTests(unittest.TestCase):
 
     def test_is_available_connection_refused(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
@@ -98,20 +99,20 @@ class IsAvailableTests(unittest.TestCase):
 
     def test_is_available_timeout(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=socket.timeout(),
         ):
             p = _make_provider()
             self.assertEqual(p.is_available(), ProviderHealth.UNREACHABLE)
 
 
-class CompleteTests(unittest.TestCase):
+class CompleteTests(DeferrableTestCase):
     def test_complete_success(self) -> None:
         body = json.dumps(
             {"message": {"role": "assistant", "content": "hello world"}}
         ).encode("utf-8")
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = _make_provider()
@@ -125,7 +126,7 @@ class CompleteTests(unittest.TestCase):
 
     def test_complete_connection_refused(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
@@ -148,7 +149,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"model not found"),
         )
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -171,7 +172,7 @@ class CompleteTests(unittest.TestCase):
             fp=io.BytesIO(b"boom"),
         )
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=err,
         ):
             p = _make_provider()
@@ -185,7 +186,7 @@ class CompleteTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "SERVER_ERROR")
             self.assertTrue(cm.exception.retryable)
 
-class StreamTests(unittest.TestCase):
+class StreamTests(DeferrableTestCase):
     def _stream_body(self) -> bytes:
         lines = [
             json.dumps({"message": {"role": "assistant", "content": "Hel"}, "done": False}),
@@ -207,7 +208,7 @@ class StreamTests(unittest.TestCase):
 
     def test_stream_yields_deltas_and_done(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             return_value=MockResponse(body=self._stream_body(), status=200),
         ):
             p = _make_provider()
@@ -230,7 +231,7 @@ class StreamTests(unittest.TestCase):
 
     def test_stream_connection_refused(self) -> None:
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = _make_provider()
@@ -250,7 +251,7 @@ class StreamTests(unittest.TestCase):
         cancel = threading.Event()
 
         with mock.patch(
-            "sublime_llm.providers.ollama.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
             return_value=resp,
         ):
             p = _make_provider()
@@ -270,7 +271,3 @@ class StreamTests(unittest.TestCase):
         self.assertIsInstance(collected[0], TextDelta)
         self.assertEqual(collected[0].text, "Hel")
         self.assertTrue(resp.closed)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -2,12 +2,13 @@
 import io
 import json
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import ChatMessage, ProviderError
-from sublime_llm.providers.openrouter import OpenRouterProvider
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import ChatMessage, ProviderError
+from LLM.sublime_llm.providers.openrouter import OpenRouterProvider
 
 
 class MockResponse:
@@ -34,7 +35,7 @@ class MockResponse:
 
 def _patch_no_secret_file():
     return mock.patch(
-        "sublime_llm.secrets._read_secrets_file",
+        "LLM.sublime_llm.secrets._read_secrets_file",
         return_value={},
     )
 
@@ -49,13 +50,13 @@ def _or_key():
     )
 
 
-class BaseUrlTests(unittest.TestCase):
+class BaseUrlTests(DeferrableTestCase):
     def test_default_base_url(self) -> None:
         p = OpenRouterProvider({})
         self.assertEqual(p.base_url, "https://openrouter.ai/api/v1")
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_list_models_without_key(self) -> None:
         body = json.dumps(
             {"data": [{"id": "openai/gpt-4o"}, {"id": "anthropic/claude-opus-4"}]}
@@ -68,7 +69,7 @@ class ListModelsTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with _no_or_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = OpenRouterProvider({})
@@ -81,7 +82,7 @@ class ListModelsTests(unittest.TestCase):
         self.assertNotIn("authorization", lowered)
 
 
-class HeadersTests(unittest.TestCase):
+class HeadersTests(DeferrableTestCase):
     def test_attribution_headers_present_when_configured(self) -> None:
         body = json.dumps(
             {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
@@ -97,7 +98,7 @@ class HeadersTests(unittest.TestCase):
             "openrouter_title": "Sublime LLM Tests",
         }
         with _or_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = OpenRouterProvider(settings)
@@ -125,7 +126,7 @@ class HeadersTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with _or_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = OpenRouterProvider({})
@@ -141,7 +142,7 @@ class HeadersTests(unittest.TestCase):
         self.assertNotIn("x-title", lowered)
 
 
-class ErrorMessageTests(unittest.TestCase):
+class ErrorMessageTests(DeferrableTestCase):
     def test_401_says_openrouter(self) -> None:
         err = urllib.error.HTTPError(
             url="https://openrouter.ai/api/v1/chat/completions",
@@ -151,7 +152,7 @@ class ErrorMessageTests(unittest.TestCase):
             fp=io.BytesIO(b"bad key"),
         )
         with _or_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = OpenRouterProvider({})
@@ -178,7 +179,3 @@ class ErrorMessageTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "MISSING_CREDENTIAL")
             self.assertIn("OpenRouter", cm.exception.message)
             self.assertIn("OPENROUTER_API_KEY", cm.exception.message)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -4,10 +4,7 @@ import os
 import re
 from typing import Optional
 
-try:
-    import sublime  # type: ignore
-except ImportError:
-    sublime = None  # type: ignore
+import sublime
 
 from .logging_setup import get_logger
 
@@ -15,16 +12,10 @@ from .logging_setup import get_logger
 _TEST_STORAGE_ROOT: Optional[str] = None
 
 
-def _storage_root() -> Optional[str]:
+def _storage_root() -> str:
     if _TEST_STORAGE_ROOT is not None:
         return _TEST_STORAGE_ROOT
-    if sublime is None:
-        return None
-    try:
-        packages = sublime.packages_path()
-    except Exception:
-        return None
-    return os.path.join(packages, "User", "sublime-llm", "chats")
+    return os.path.join(sublime.packages_path(), "User", "sublime-llm", "chats")
 
 
 def _slug_for_project(project_file_name: str) -> str:
@@ -36,8 +27,6 @@ def _slug_for_project(project_file_name: str) -> str:
 
 def get_chat_path(window) -> Optional[str]:
     root = _storage_root()
-    if root is None:
-        return None
     if window is None:
         return None
     try:

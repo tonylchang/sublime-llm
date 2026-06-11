@@ -1,9 +1,10 @@
 """Tests for sublime_llm.streaming."""
 import io
 import threading
-import unittest
 
-from sublime_llm.streaming import iter_ndjson_lines, iter_sse_lines
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.streaming import iter_ndjson_lines, iter_sse_lines
 
 
 class FakeResponse:
@@ -37,7 +38,7 @@ class _ReadlineHook:
         self._inner.close()
 
 
-class SSETests(unittest.TestCase):
+class SSETests(DeferrableTestCase):
     def test_two_messages(self) -> None:
         data = b"data: chunk1\n\ndata: chunk2\n\n"
         resp = FakeResponse(data)
@@ -82,7 +83,7 @@ class SSETests(unittest.TestCase):
         self.assertTrue(wrapped.closed)
 
 
-class NDJSONTests(unittest.TestCase):
+class NDJSONTests(DeferrableTestCase):
     def test_three_lines(self) -> None:
         data = b'{"a":1}\n{"b":2}\n{"c":3}\n'
         resp = FakeResponse(data)
@@ -118,7 +119,3 @@ class NDJSONTests(unittest.TestCase):
 
         self.assertEqual(emitted, [{"a": 1}])
         self.assertTrue(wrapped.closed)
-
-
-if __name__ == "__main__":
-    unittest.main()

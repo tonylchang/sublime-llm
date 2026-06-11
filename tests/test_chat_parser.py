@@ -1,10 +1,11 @@
 """Tests for chat_parser."""
-import unittest
 
-from sublime_llm.chat_parser import parse_messages
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.chat_parser import parse_messages
 
 
-class ParseMessagesTests(unittest.TestCase):
+class ParseMessagesTests(DeferrableTestCase):
     def test_basic_three_turn(self):
         text = "<user>\nhello\n\n<assistant>\nhi\n\n<user>\ngoodbye"
         msgs = parse_messages(text, "")
@@ -119,7 +120,3 @@ class ParseMessagesTests(unittest.TestCase):
         self.assertEqual(msgs[0].content, "old question")
         self.assertEqual(msgs[1].content, "new answer")
         self.assertEqual(msgs[2].content, "follow up")
-
-
-if __name__ == "__main__":
-    unittest.main()

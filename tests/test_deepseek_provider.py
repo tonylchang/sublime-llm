@@ -2,12 +2,13 @@
 import io
 import json
 import threading
-import unittest
 import urllib.error
 from unittest import mock
 
-from sublime_llm.providers import ChatMessage, ProviderError
-from sublime_llm.providers.deepseek import DeepSeekProvider
+from unittesting import DeferrableTestCase
+
+from LLM.sublime_llm.providers import ChatMessage, ProviderError
+from LLM.sublime_llm.providers.deepseek import DeepSeekProvider
 
 
 class MockResponse:
@@ -34,7 +35,7 @@ class MockResponse:
 
 def _patch_no_secret_file():
     return mock.patch(
-        "sublime_llm.secrets._read_secrets_file",
+        "LLM.sublime_llm.secrets._read_secrets_file",
         return_value={},
     )
 
@@ -49,13 +50,13 @@ def _no_ds_key():
     return mock.patch.dict("os.environ", {"DEEPSEEK_API_KEY": ""}, clear=False)
 
 
-class BaseUrlTests(unittest.TestCase):
+class BaseUrlTests(DeferrableTestCase):
     def test_default_base_url(self) -> None:
         p = DeepSeekProvider({})
         self.assertEqual(p.base_url, "https://api.deepseek.com")
 
 
-class KeyResolutionTests(unittest.TestCase):
+class KeyResolutionTests(DeferrableTestCase):
     def test_key_resolved_via_deepseek_env(self) -> None:
         body = json.dumps(
             {"choices": [{"message": {"role": "assistant", "content": "ok"}}]}
@@ -67,7 +68,7 @@ class KeyResolutionTests(unittest.TestCase):
             return MockResponse(body=body, status=200)
 
         with _ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=fake_urlopen,
         ):
             p = DeepSeekProvider({})
@@ -82,13 +83,13 @@ class KeyResolutionTests(unittest.TestCase):
         self.assertEqual(lowered.get("authorization"), "Bearer sk-ds-test12345")
 
 
-class ListModelsTests(unittest.TestCase):
+class ListModelsTests(DeferrableTestCase):
     def test_list_models_success(self) -> None:
         body = json.dumps(
             {"data": [{"id": "deepseek-v4-pro"}, {"id": "deepseek-v4-flash"}]}
         ).encode("utf-8")
         with _ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             return_value=MockResponse(body=body, status=200),
         ):
             p = DeepSeekProvider({})
@@ -103,7 +104,7 @@ class ListModelsTests(unittest.TestCase):
             fp=io.BytesIO(b"nope"),
         )
         with _ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = DeepSeekProvider({})
@@ -113,7 +114,7 @@ class ListModelsTests(unittest.TestCase):
 
     def test_list_models_falls_back_on_connection_error(self) -> None:
         with _ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=ConnectionRefusedError(),
         ):
             p = DeepSeekProvider({})
@@ -130,7 +131,7 @@ class ListModelsTests(unittest.TestCase):
             fp=io.BytesIO(b"nope"),
         )
         with _ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen",
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
             side_effect=err,
         ):
             p = DeepSeekProvider({"deepseek_models": ["deepseek-r1", "deepseek-coder"]})
@@ -138,7 +139,7 @@ class ListModelsTests(unittest.TestCase):
 
     def test_list_models_no_key_uses_fallback(self) -> None:
         with _no_ds_key(), _patch_no_secret_file(), mock.patch(
-            "sublime_llm.providers.openai.urllib.request.urlopen"
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen"
         ) as urlopen:
             p = DeepSeekProvider({})
             self.assertEqual(
@@ -147,7 +148,7 @@ class ListModelsTests(unittest.TestCase):
             urlopen.assert_not_called()
 
 
-class ErrorMessageTests(unittest.TestCase):
+class ErrorMessageTests(DeferrableTestCase):
     def test_missing_credential_says_deepseek(self) -> None:
         with _no_ds_key(), _patch_no_secret_file():
             p = DeepSeekProvider({})
@@ -160,7 +161,3 @@ class ErrorMessageTests(unittest.TestCase):
                 )
             self.assertEqual(cm.exception.code, "MISSING_CREDENTIAL")
             self.assertIn("DeepSeek", cm.exception.message)
-
-
-if __name__ == "__main__":
-    unittest.main()

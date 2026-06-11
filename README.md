@@ -277,15 +277,27 @@ If you find a security issue, please email <tony@1x0.net> rather than opening a 
 
 ## Development
 
-Requirements: Python 3.8 or newer (Sublime ships its own plugin host; the test suite runs against your system Python).
+Tests run inside a real (headless) Sublime Text via [UnitTesting](https://github.com/SublimeText/UnitTesting)'s Docker runner, so test code can use the full `sublime` / `sublime_plugin` API. Requirements: Docker, plus a clone of UnitTesting.
 
 Run tests:
 
-```
-python3 -m unittest discover -s tests -v
+```sh
+UT=/path/to/UnitTesting   # git clone https://github.com/SublimeText/UnitTesting
+"$UT/docker/ut-run-tests" . --package-name LLM
 ```
 
-The test suite avoids importing Sublime at module top level so it can run outside Sublime. New modules should follow the same pattern (wrap the `import sublime` in a `try/except ImportError`).
+Run a single test file:
+
+```sh
+"$UT/docker/ut-run-tests" . --package-name LLM --file tests/test_chat_parser.py
+```
+
+Use `--dry-run` to verify the Docker/Sublime test environment without running tests. The first run builds the image and installs Sublime Text into a cache volume; later runs are fast.
+
+Notes:
+
+- `--package-name LLM` is required: the package is mounted as `Packages/LLM`, and tests import the plugin as `from LLM.sublime_llm import ...`.
+- Test classes subclass `unittesting.DeferrableTestCase`, which also lets a test yield to the Sublime event loop (yield a callable to poll a condition, or an int for a delay in ms) when exercising async editor behavior.
 
 Local install loop:
 

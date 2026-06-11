@@ -5,12 +5,8 @@ import re
 import threading
 import time
 
-try:
-    import sublime  # type: ignore
-    import sublime_plugin  # type: ignore
-except ImportError:
-    sublime = None  # type: ignore
-    sublime_plugin = None  # type: ignore
+import sublime
+import sublime_plugin
 
 from . import persistence
 from .chat_parser import parse_messages
@@ -28,10 +24,6 @@ from .settings import SETTINGS_FILENAME, get_settings
 
 PROVIDER_NAMES = ["ollama", "openai", "anthropic", "openrouter", "deepseek", "custom"]
 HOSTED_PROVIDER_NAMES = ["openai", "anthropic", "openrouter", "deepseek", "custom"]
-
-
-_WindowCommandBase = sublime_plugin.WindowCommand if sublime_plugin is not None else object
-_TextCommandBase = sublime_plugin.TextCommand if sublime_plugin is not None else object
 
 
 _SYNTAX_TO_LANG = {
@@ -65,7 +57,7 @@ def _infer_lang(view) -> str:
     return _SYNTAX_TO_LANG.get(basename, "")
 
 
-class SublimeLlmOpenChatCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmOpenChatCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         # Existing live view in this window — just focus it.
         if ChatView.find(self.window) is not None:
@@ -80,7 +72,7 @@ class SublimeLlmOpenChatCommand(_WindowCommandBase):  # type: ignore[misc,valid-
             path = None
         has_saved = bool(path) and os.path.exists(path)
 
-        if not has_saved or sublime is None:
+        if not has_saved:
             ChatView.create_or_focus(self.window)
             return
 
@@ -113,38 +105,32 @@ class SublimeLlmOpenChatCommand(_WindowCommandBase):  # type: ignore[misc,valid-
         return True
 
 
-class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmSubmitCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         chat_view = ChatView.create_or_focus(self.window)
         user_text = chat_view.read_input()
         if not user_text:
-            if sublime is not None:
-                sublime.status_message("LLM: input is empty")
+            sublime.status_message("LLM: input is empty")
             return
         handle = chat_view.get_handle()
         if handle is not None and handle.streaming:
-            if sublime is not None:
-                sublime.status_message(
-                    "LLM: response in progress; press Esc or run LLM: Cancel"
-                )
+            sublime.status_message(
+                "LLM: response in progress; press Esc or run LLM: Cancel"
+            )
             return
 
         settings = get_settings()
         system_prompt = settings.get_system_prompt()
         model = settings.get_model()
         if not model:
-            if sublime is not None:
-                sublime.status_message("LLM: model not configured")
+            sublime.status_message("LLM: model not configured")
             return
 
         view = chat_view.get_view()
-        buffer_text = ""
-        if sublime is not None:
-            buffer_text = view.substr(sublime.Region(0, view.size()))
+        buffer_text = view.substr(sublime.Region(0, view.size()))
         messages = parse_messages(buffer_text, system_prompt)
         if not messages:
-            if sublime is not None:
-                sublime.status_message("LLM: input is empty")
+            sublime.status_message("LLM: input is empty")
             return
 
         chat_view.get_view().run_command(
@@ -155,9 +141,8 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         if cancel_event is not None:
             cancel_event.clear()
         chat_view.set_streaming(True)
-        if sublime is not None:
-            _start_thinking_indicator(chat_view.get_view())
-            sublime.status_message("LLM: streaming...")
+        _start_thinking_indicator(chat_view.get_view())
+        sublime.status_message("LLM: streaming...")
 
         options = {
             "temperature": settings.get_temperature(),
@@ -177,9 +162,6 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         last_flush = [time.monotonic()]
 
         def schedule_append(text: str) -> None:
-            if sublime is None:
-                return
-
             def apply(t=text):
                 _stop_thinking_indicator(chat_view.get_view())
                 chat_view._append_streamed(t)
@@ -213,10 +195,7 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
                 flush_buffer(force=True)
         except ProviderError as err:
             log.warning("provider error: %s %s", err.code, err.message)
-            if sublime is not None:
-                sublime.set_timeout(
-                    lambda e=err: self._on_error(e, chat_view), 0
-                )
+            sublime.set_timeout(lambda e=err: self._on_error(e, chat_view), 0)
             self._marshal_stop(chat_view)
             return
         except Exception as err:  # noqa: BLE001
@@ -224,41 +203,29 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
             wrapped = ProviderError(
                 "INTERNAL", "Internal error: " + str(err), False
             )
-            if sublime is not None:
-                sublime.set_timeout(
-                    lambda e=wrapped: self._on_error(e, chat_view), 0
-                )
+            sublime.set_timeout(lambda e=wrapped: self._on_error(e, chat_view), 0)
             self._marshal_stop(chat_view)
             return
 
         cancelled = bool(cancel_event is not None and cancel_event.is_set())
-        if sublime is not None:
-            sublime.set_timeout(
-                lambda c=cancelled: self._on_done(chat_view, c), 0
-            )
+        sublime.set_timeout(lambda c=cancelled: self._on_done(chat_view, c), 0)
         self._marshal_stop(chat_view)
 
     def _marshal_stop(self, chat_view) -> None:
-        if sublime is None:
-            chat_view.set_streaming(False)
-            return
         sublime.set_timeout(lambda: chat_view.set_streaming(False), 0)
 
     def _on_error(self, err: ProviderError, chat_view) -> None:
-        if sublime is not None:
-            _stop_thinking_indicator(chat_view.get_view())
+        _stop_thinking_indicator(chat_view.get_view())
         chat_view.append_raw("(error: {0} - {1})".format(err.code, err.message))
         chat_view.append_user_marker()
-        if sublime is not None:
-            sublime.status_message("LLM: " + err.message)
+        sublime.status_message("LLM: " + err.message)
 
     def _on_done(self, chat_view, cancelled: bool) -> None:
-        if sublime is not None:
-            _stop_thinking_indicator(chat_view.get_view())
+        _stop_thinking_indicator(chat_view.get_view())
         if cancelled:
             chat_view.append_raw("(cancelled)")
         view = chat_view.get_view()
-        if sublime is not None and view is not None:
+        if view is not None:
             try:
                 text = view.substr(sublime.Region(0, view.size()))
                 persistence.save_chat(self.window, text)
@@ -268,19 +235,18 @@ class SublimeLlmSubmitCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         # Add the render phantom AFTER append_user_marker so its anchor
         # position is stable (placing it before the marker would let the
         # appended text shift the phantom past the response).
-        if sublime is not None and view is not None and not cancelled:
+        if view is not None and not cancelled:
             try:
                 _maybe_add_render_phantom(view)
             except Exception:
                 get_logger().warning("render phantom: failed")
-        if sublime is not None:
-            if cancelled:
-                sublime.status_message("LLM: cancelled")
-            else:
-                sublime.status_message("LLM: done")
+        if cancelled:
+            sublime.status_message("LLM: cancelled")
+        else:
+            sublime.status_message("LLM: done")
 
 
-class SublimeLlmCancelCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmCancelCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         chat_view = ChatView.find(self.window)
         if chat_view is None:
@@ -289,8 +255,7 @@ class SublimeLlmCancelCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         if event is None:
             return
         event.set()
-        if sublime is not None:
-            sublime.status_message("LLM: cancelling...")
+        sublime.status_message("LLM: cancelling...")
 
     def is_enabled(self) -> bool:
         chat_view = ChatView.find(self.window)
@@ -302,26 +267,25 @@ class SublimeLlmCancelCommand(_WindowCommandBase):  # type: ignore[misc,valid-ty
         return bool(handle.streaming)
 
 
-class SublimeLlmClearChatCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmClearChatCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
-        if sublime is not None:
-            prompt = "Clear chat history for this project? This cannot be undone."
-            confirmed = False
+        prompt = "Clear chat history for this project? This cannot be undone."
+        confirmed = False
+        try:
+            result = sublime.yes_no_cancel_dialog(prompt)
+            confirmed = result == sublime.DIALOG_YES
+        except Exception:
             try:
-                result = sublime.yes_no_cancel_dialog(prompt)
-                confirmed = result == sublime.DIALOG_YES
+                confirmed = bool(sublime.ok_cancel_dialog(prompt))
             except Exception:
-                try:
-                    confirmed = bool(sublime.ok_cancel_dialog(prompt))
-                except Exception:
-                    confirmed = False
-            if not confirmed:
-                return
+                confirmed = False
+        if not confirmed:
+            return
         persistence.clear_chat(self.window)
         chat_view = ChatView.find(self.window)
         if chat_view is not None:
             view = chat_view.get_view()
-            if sublime is not None and view is not None:
+            if view is not None:
                 view.set_read_only(False)
                 try:
                     view.run_command("select_all")
@@ -329,8 +293,7 @@ class SublimeLlmClearChatCommand(_WindowCommandBase):  # type: ignore[misc,valid
                 except Exception:
                     pass
             chat_view.init_template()
-        if sublime is not None:
-            sublime.status_message("LLM: chat history cleared")
+        sublime.status_message("LLM: chat history cleared")
 
     def is_enabled(self) -> bool:
         if ChatView.find(self.window) is not None:
@@ -338,11 +301,7 @@ class SublimeLlmClearChatCommand(_WindowCommandBase):  # type: ignore[misc,valid
         path = persistence.get_chat_path(self.window)
         if path is None:
             return False
-        try:
-            import os
-            return os.path.exists(path)
-        except Exception:
-            return False
+        return os.path.exists(path)
 
 
 _DEFAULT_SEND_FILE_PROMPT = (
@@ -378,7 +337,7 @@ _DEFAULT_SEND_FILE_PROMPT = (
 _SEND_FILE_MAX_BYTES = 1024 * 1024  # 1 MiB hard cap; warn at half this.
 
 
-class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmSendFileCommand(sublime_plugin.WindowCommand):
     def run(self, files=None, dirs=None) -> None:
         path = None
         if files:
@@ -390,29 +349,25 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
             if view is not None:
                 path = view.file_name()
         if not path:
-            if sublime is not None:
-                sublime.status_message(
-                    "LLM: no file selected — right-click a file in the sidebar"
-                )
+            sublime.status_message(
+                "LLM: no file selected — right-click a file in the sidebar"
+            )
             return
         try:
             size = os.path.getsize(path)
         except OSError as e:
-            if sublime is not None:
-                sublime.status_message("LLM: cannot stat {0}: {1}".format(path, e))
+            sublime.status_message("LLM: cannot stat {0}: {1}".format(path, e))
             return
         if size > _SEND_FILE_MAX_BYTES:
-            if sublime is not None:
-                sublime.status_message(
-                    "LLM: file too large ({0} bytes); 1 MiB max".format(size)
-                )
+            sublime.status_message(
+                "LLM: file too large ({0} bytes); 1 MiB max".format(size)
+            )
             return
         try:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 contents = f.read()
         except OSError as e:
-            if sublime is not None:
-                sublime.status_message("LLM: cannot read {0}: {1}".format(path, e))
+            sublime.status_message("LLM: cannot read {0}: {1}".format(path, e))
             return
 
         prompt = get_settings().get("send_file_prompt", _DEFAULT_SEND_FILE_PROMPT) or _DEFAULT_SEND_FILE_PROMPT
@@ -428,7 +383,7 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
         existing = ChatView.find(self.window)
         if existing is not None:
             view = existing.get_view()
-            if sublime is not None and view is not None:
+            if view is not None:
                 view.set_read_only(False)
                 try:
                     view.run_command("select_all")
@@ -440,7 +395,7 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
             chat_view = ChatView.create_or_focus(self.window)
             # create_or_focus may have called init_template; wipe it for a clean slate.
             view = chat_view.get_view()
-            if sublime is not None and view is not None and view.size() > 0:
+            if view is not None and view.size() > 0:
                 view.set_read_only(False)
                 try:
                     view.run_command("select_all")
@@ -459,8 +414,6 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
                 basename, size, system_body, default_user_prompt
             )
         )
-        if sublime is None:
-            return
 
         # Fold the file body. Region is from end of the <system> line to the
         # start of the trailing <user> line.
@@ -485,7 +438,7 @@ class SublimeLlmSendFileCommand(_WindowCommandBase):  # type: ignore[misc,valid-
         self.window.run_command("sublime_llm_submit")
 
 
-class SublimeLlmSendSelectionCommand(_TextCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmSendSelectionCommand(sublime_plugin.TextCommand):
     def is_enabled(self) -> bool:
         try:
             return any(not r.empty() for r in self.view.sel())
@@ -513,11 +466,10 @@ class SublimeLlmSendSelectionCommand(_TextCommandBase):  # type: ignore[misc,val
         separator = "\n\n" if existing_input else ""
         chat_view.append_raw(separator + pre_fill)
         view = chat_view.get_view()
-        if sublime is not None:
-            view.sel().clear()
-            view.sel().add(sublime.Region(view.size()))
-            view.show(view.size())
-            window.run_command("sublime_llm_submit")
+        view.sel().clear()
+        view.sel().add(sublime.Region(view.size()))
+        view.show(view.size())
+        window.run_command("sublime_llm_submit")
 
 
 def _settings_dict_for(provider_name: str) -> dict:
@@ -556,8 +508,6 @@ def _settings_dict_for(provider_name: str) -> dict:
 
 
 def _write_setting(key: str, value) -> None:
-    if sublime is None:
-        return
     settings = sublime.load_settings(SETTINGS_FILENAME)
     settings.set(key, value)
     sublime.save_settings(SETTINGS_FILENAME)
@@ -573,16 +523,15 @@ def _try_build_provider(name: str):
         return None
 
 
-class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmChooseModelCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         settings = get_settings()
         provider_name = settings.get_provider()
         provider = _try_build_provider(provider_name)
         if provider is None:
-            if sublime is not None:
-                sublime.status_message(
-                    "LLM: unknown provider '{0}'".format(provider_name)
-                )
+            sublime.status_message(
+                "LLM: unknown provider '{0}'".format(provider_name)
+            )
             return
 
         # Catch the most common failure (missing key for a hosted provider)
@@ -591,16 +540,14 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         if provider_name in HOSTED_PROVIDER_NAMES and provider_name != "custom":
             key, source = resolve_key(provider_name)
             if key is None:
-                if sublime is not None:
-                    sublime.status_message(
-                        "LLM: no API key for {0}; run 'LLM: Show External Config Status'".format(
-                            provider_name
-                        )
+                sublime.status_message(
+                    "LLM: no API key for {0}; run 'LLM: Show External Config Status'".format(
+                        provider_name
                     )
+                )
                 return
 
-        if sublime is not None:
-            sublime.status_message("LLM: fetching models...")
+        sublime.status_message("LLM: fetching models...")
 
         thread = threading.Thread(
             target=self._fetch_and_show, args=(provider, provider_name), daemon=True
@@ -619,8 +566,6 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         except Exception as e:  # noqa: BLE001
             log.warning("list_models failed: %s", e)
             models = []
-        if sublime is None:
-            return
         if not models:
             msg = self._empty_models_message(provider_name, health)
             sublime.set_timeout(lambda m=msg: sublime.status_message(m), 0)
@@ -651,9 +596,6 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         return "LLM: {0}: no models returned".format(provider_name)
 
     def _show_panel(self, models) -> None:
-        if sublime is None:
-            return
-
         def on_select(idx: int) -> None:
             if idx < 0:
                 return
@@ -664,7 +606,7 @@ class SublimeLlmChooseModelCommand(_WindowCommandBase):  # type: ignore[misc,val
         self.window.show_quick_panel(models, on_select)
 
 
-class SublimeLlmChooseProviderCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmChooseProviderCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         # Health badges land in F6; if probe helper exists, use it.
         thread = threading.Thread(target=self._probe_and_show, daemon=True)
@@ -672,8 +614,6 @@ class SublimeLlmChooseProviderCommand(_WindowCommandBase):  # type: ignore[misc,
 
     def _probe_and_show(self) -> None:
         entries = self._build_entries()
-        if sublime is None:
-            return
         sublime.set_timeout(lambda: self._show_panel(entries), 0)
 
     def _build_entries(self):
@@ -715,8 +655,6 @@ class SublimeLlmChooseProviderCommand(_WindowCommandBase):  # type: ignore[misc,
         return "{0}, last4: {1}".format(source, _mask_key(key))
 
     def _show_panel(self, entries) -> None:
-        if sublime is None:
-            return
         labels = [label for _, label in entries]
         names = [n for n, _ in entries]
 
@@ -747,28 +685,14 @@ def _health_label(health) -> str:
         return str(health)
 
 
-def _import_persistence():
-    try:
-        from . import persistence  # type: ignore
-        return persistence
-    except ImportError:
-        return None
-
-
 def _chat_history_path(window) -> str:
-    persistence = _import_persistence()
-    if persistence is None:
-        return "(persistence module not yet available)"
     try:
-        getter = getattr(persistence, "get_chat_path", None)
-        if getter is None:
-            return "(persistence.get_chat_path not available)"
-        return str(getter(window))
+        return str(persistence.get_chat_path(window))
     except Exception as e:  # noqa: BLE001
         return "(error: {0})".format(e)
 
 
-class SublimeLlmShowStatusCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmShowStatusCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         thread = threading.Thread(target=self._probe_and_show, daemon=True)
         thread.start()
@@ -841,19 +765,15 @@ class SublimeLlmShowStatusCommand(_WindowCommandBase):  # type: ignore[misc,vali
         )
         text = "\n".join(lines) + "\n"
 
-        if sublime is None:
-            return
         sublime.set_timeout(lambda: self._render(text), 0)
 
     def _render(self, text: str) -> None:
-        if sublime is None:
-            return
         panel = self.window.create_output_panel("llm_status")
         panel.run_command("append", {"characters": text})
         self.window.run_command("show_panel", {"panel": "output.llm_status"})
 
 
-class SublimeLlmShowSecretStatusCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmShowSecretStatusCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
         thread = threading.Thread(target=self._resolve_and_show, daemon=True)
         thread.start()
@@ -888,13 +808,9 @@ class SublimeLlmShowSecretStatusCommand(_WindowCommandBase):  # type: ignore[mis
         )
         text = "\n".join(lines) + "\n"
 
-        if sublime is None:
-            return
         sublime.set_timeout(lambda: self._render(text), 0)
 
     def _render(self, text: str) -> None:
-        if sublime is None:
-            return
         panel = self.window.create_output_panel("llm_secret_status")
         panel.run_command("append", {"characters": text})
         self.window.run_command("show_panel", {"panel": "output.llm_secret_status"})
@@ -915,7 +831,7 @@ _thinking_states: dict = {}
 
 
 def _start_thinking_indicator(view) -> None:
-    if sublime is None or view is None:
+    if view is None:
         return
     state = {"frame": 0, "active": True, "view_id": view.id()}
     _thinking_states[view.id()] = state
@@ -923,8 +839,6 @@ def _start_thinking_indicator(view) -> None:
 
 
 def _tick_thinking(view, state) -> None:
-    if sublime is None:
-        return
     current = _thinking_states.get(state["view_id"])
     if current is not state or not state.get("active"):
         return
@@ -954,7 +868,7 @@ def _tick_thinking(view, state) -> None:
 
 
 def _stop_thinking_indicator(view) -> None:
-    if sublime is None or view is None:
+    if view is None:
         return
     state = _thinking_states.pop(view.id(), None)
     if state is not None:
@@ -967,8 +881,6 @@ def _stop_thinking_indicator(view) -> None:
 
 def _find_last_assistant_region(view):
     """Returns (start, end) of the last <assistant> response body, or None."""
-    if sublime is None:
-        return None
     text = view.substr(sublime.Region(0, view.size()))
     marker = "<assistant> "
     idx = text.rfind("\n" + marker)
@@ -993,8 +905,6 @@ def _find_last_assistant_region(view):
 
 
 def _maybe_add_render_phantom(view) -> None:
-    if sublime is None:
-        return
     region = _find_last_assistant_region(view)
     if region is None:
         return
@@ -1031,10 +941,8 @@ def _maybe_add_render_phantom(view) -> None:
     )
 
 
-class SublimeLlmRenderLastResponseCommand(_WindowCommandBase):  # type: ignore[misc,valid-type]
+class SublimeLlmRenderLastResponseCommand(sublime_plugin.WindowCommand):
     def run(self) -> None:
-        if sublime is None:
-            return
         chat = ChatView.find(self.window)
         if chat is None:
             sublime.status_message("LLM: no chat view")

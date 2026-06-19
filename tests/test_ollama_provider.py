@@ -78,6 +78,23 @@ class ListModelsTests(DeferrableTestCase):
             p = _make_provider()
             self.assertEqual(p.list_models(), [])
 
+    def test_list_models_closes_http_error(self) -> None:
+        err = urllib.error.HTTPError(
+            url="http://localhost:11434/api/tags",
+            code=500,
+            msg="Internal Server Error",
+            hdrs=None,
+            fp=io.BytesIO(b"boom"),
+        )
+        with mock.patch(
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
+            side_effect=err,
+        ):
+            p = _make_provider()
+            self.assertEqual(p.list_models(), [])
+
+        self.assertTrue(err.closed)
+
 
 class IsAvailableTests(DeferrableTestCase):
     def test_is_available_ok(self) -> None:
@@ -104,6 +121,23 @@ class IsAvailableTests(DeferrableTestCase):
         ):
             p = _make_provider()
             self.assertEqual(p.is_available(), ProviderHealth.UNREACHABLE)
+
+    def test_is_available_closes_http_error(self) -> None:
+        err = urllib.error.HTTPError(
+            url="http://localhost:11434/api/tags",
+            code=500,
+            msg="Internal Server Error",
+            hdrs=None,
+            fp=io.BytesIO(b"boom"),
+        )
+        with mock.patch(
+            "LLM.sublime_llm.providers.ollama.urllib.request.urlopen",
+            side_effect=err,
+        ):
+            p = _make_provider()
+            self.assertEqual(p.is_available(), ProviderHealth.MISCONFIGURED)
+
+        self.assertTrue(err.closed)
 
 
 class CompleteTests(DeferrableTestCase):

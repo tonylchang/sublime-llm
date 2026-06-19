@@ -155,6 +155,13 @@ class OpenAIProvider(Provider):
         url = self.base_url + "/models"
         try:
             resp = self._open_url(url, method="GET", headers=headers, timeout=_PROBE_TIMEOUT)
+        except urllib.error.HTTPError as e:
+            try:
+                e.close()
+            except Exception:
+                pass
+            _log.warning("%s list_models: request failed (HTTPError)", self.name)
+            return []
         except Exception as e:
             _log.warning("%s list_models: request failed (%s)", self.name, type(e).__name__)
             return []

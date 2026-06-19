@@ -1,5 +1,6 @@
 """DeepSeek provider."""
 import json
+import urllib.error
 from typing import List
 
 from ..logging_setup import get_logger
@@ -30,6 +31,16 @@ class DeepSeekProvider(OpenAIProvider):
         url = self.base_url + "/models"
         try:
             resp = self._open_url(url, method="GET", headers=headers, timeout=5)
+        except urllib.error.HTTPError as e:
+            try:
+                e.close()
+            except Exception:
+                pass
+            _log.warning(
+                "%s list_models: request failed (HTTPError); using fallback list",
+                self.name,
+            )
+            return self._fallback_models()
         except Exception as e:
             _log.warning(
                 "%s list_models: request failed (%s); using fallback list",

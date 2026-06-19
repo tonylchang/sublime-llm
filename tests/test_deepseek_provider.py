@@ -112,6 +112,8 @@ class ListModelsTests(DeferrableTestCase):
                 p.list_models(), ["deepseek-v4-flash", "deepseek-v4-pro"]
             )
 
+        self.assertTrue(err.closed)
+
     def test_list_models_falls_back_on_connection_error(self) -> None:
         with _ds_key(), _patch_no_secret_file(), mock.patch(
             "LLM.sublime_llm.providers.openai.urllib.request.urlopen",

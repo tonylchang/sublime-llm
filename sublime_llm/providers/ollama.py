@@ -83,14 +83,18 @@ class OllamaProvider(Provider):
             return ProviderHealth.UNREACHABLE
         except socket.timeout:
             return ProviderHealth.UNREACHABLE
+        except urllib.error.HTTPError as e:
+            try:
+                e.close()
+            except Exception:
+                pass
+            return ProviderHealth.MISCONFIGURED
         except urllib.error.URLError as e:
             reason = getattr(e, "reason", None)
             if isinstance(reason, ConnectionRefusedError):
                 return ProviderHealth.UNREACHABLE
             if isinstance(reason, socket.timeout):
                 return ProviderHealth.UNREACHABLE
-            return ProviderHealth.MISCONFIGURED
-        except urllib.error.HTTPError:
             return ProviderHealth.MISCONFIGURED
         except OSError:
             return ProviderHealth.MISCONFIGURED
@@ -110,6 +114,13 @@ class OllamaProvider(Provider):
         url = self.base_url + "/api/tags"
         try:
             resp = self._open_url(url, method="GET", timeout=_PROBE_TIMEOUT)
+        except urllib.error.HTTPError as e:
+            try:
+                e.close()
+            except Exception:
+                pass
+            _log.warning("ollama list_models: request failed (HTTPError)")
+            return []
         except Exception as e:
             _log.warning("ollama list_models: request failed (%s)", type(e).__name__)
             return []

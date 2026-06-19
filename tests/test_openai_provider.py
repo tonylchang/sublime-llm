@@ -137,6 +137,23 @@ class ListModelsTests(DeferrableTestCase):
             p = _make_provider()
             self.assertEqual(p.list_models(), [])
 
+    def test_list_models_closes_http_error(self) -> None:
+        err = urllib.error.HTTPError(
+            url="https://api.openai.com/v1/models",
+            code=500,
+            msg="Internal Server Error",
+            hdrs=None,
+            fp=io.BytesIO(b"boom"),
+        )
+        with _patch_env(_TEST_KEY_ENV), _patch_no_secret_file(), mock.patch(
+            "LLM.sublime_llm.providers.openai.urllib.request.urlopen",
+            side_effect=err,
+        ):
+            p = _make_provider()
+            self.assertEqual(p.list_models(), [])
+
+        self.assertTrue(err.closed)
+
 
 class CompleteTests(DeferrableTestCase):
     def test_complete_success(self) -> None:

@@ -14,7 +14,11 @@ from LLM.sublime_llm.providers import (
     ProviderHealth,
     TextDelta,
 )
-from LLM.sublime_llm.providers.anthropic import AnthropicProvider
+from LLM.sublime_llm.providers.anthropic import (
+    AnthropicProvider,
+    _DEFAULT_MODELS,
+    _MODELS_REJECTING_SAMPLING,
+)
 
 
 class MockResponse:
@@ -100,19 +104,117 @@ class IsAvailableTests(DeferrableTestCase):
 
 
 class ListModelsTests(DeferrableTestCase):
-    def test_default_list(self) -> None:
-        p = _make_provider()
-        models = p.list_models()
-        self.assertIn("claude-opus-4-7", models)
-        self.assertIn("claude-sonnet-4-6", models)
-        self.assertIn("claude-haiku-4-5", models)
-        # Order is preserved (preference encoded).
-        self.assertEqual(models[0], "claude-opus-4-7")
+    def _resolve_patch(self):
+        return mock.patch(
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
+            return_value=(_KEY_ENV["ANTHROPIC_API_KEY"], "env"),
+        )
 
-    def test_settings_override(self) -> None:
+    def _no_key_patch(self):
+        return mock.patch(
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
+            return_value=(None, "missing"),
+        )
+
+    def test_live_discovery_success(self) -> None:
+        body = json.dumps(
+            {
+                "data": [
+                    {"id": "claude-opus-4-8", "type": "model"},
+                    {"id": "claude-haiku-4-5", "type": "model"},
+                    {"id": "claude-sonnet-5", "type": "model"},
+                ],
+                "has_more": False,
+            }
+        ).encode("utf-8")
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            return_value=MockResponse(body=body, status=200),
+        ):
+            p = _make_provider()
+            # Sorted, mirroring the OpenAI-family providers.
+            self.assertEqual(
+                p.list_models(),
+                ["claude-haiku-4-5", "claude-opus-4-8", "claude-sonnet-5"],
+            )
+
+    def test_live_discovery_hits_models_endpoint(self) -> None:
+        captured = {}
+
+        def fake_urlopen(req, timeout=None, context=None):
+            captured["url"] = req.full_url
+            captured["method"] = req.get_method()
+            captured["headers"] = dict(req.header_items())
+            body = json.dumps({"data": [{"id": "claude-opus-4-8"}]}).encode("utf-8")
+            return MockResponse(body=body, status=200)
+
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=fake_urlopen,
+        ):
+            p = _make_provider()
+            p.list_models()
+
+        self.assertIn("/v1/models", captured["url"])
+        self.assertEqual(captured["method"], "GET")
+        header_keys = {k.lower() for k in captured["headers"].keys()}
+        self.assertIn("x-api-key", header_keys)
+        self.assertIn("anthropic-version", header_keys)
+
+    def test_falls_back_to_defaults_on_http_error(self) -> None:
+        err = urllib.error.HTTPError(
+            url="https://api.anthropic.com/v1/models",
+            code=500,
+            msg="err",
+            hdrs=None,
+            fp=io.BytesIO(b"err"),
+        )
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=err,
+        ):
+            p = _make_provider()
+            self.assertEqual(p.list_models(), list(_DEFAULT_MODELS))
+        self.assertTrue(err.closed)
+
+    def test_falls_back_to_defaults_on_connection_error(self) -> None:
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=ConnectionRefusedError(),
+        ):
+            p = _make_provider()
+            self.assertEqual(p.list_models(), list(_DEFAULT_MODELS))
+
+    def test_falls_back_to_defaults_on_malformed_json(self) -> None:
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            return_value=MockResponse(body=b"not json", status=200),
+        ):
+            p = _make_provider()
+            self.assertEqual(p.list_models(), list(_DEFAULT_MODELS))
+
+    def test_no_key_uses_defaults_without_network(self) -> None:
+        with self._no_key_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen"
+        ) as urlopen:
+            p = _make_provider()
+            self.assertEqual(p.list_models(), list(_DEFAULT_MODELS))
+            urlopen.assert_not_called()
+
+    def test_settings_override_wins_and_skips_network(self) -> None:
         custom = ["claude-foo", "claude-bar"]
-        p = AnthropicProvider({"anthropic_models": custom})
-        self.assertEqual(p.list_models(), custom)
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen"
+        ) as urlopen:
+            p = AnthropicProvider({"anthropic_models": custom})
+            self.assertEqual(p.list_models(), custom)
+            urlopen.assert_not_called()
+
+    def test_default_fallback_is_current(self) -> None:
+        # The offline fallback should list current model IDs.
+        self.assertEqual(_DEFAULT_MODELS[0], "claude-opus-4-8")
+        self.assertIn("claude-sonnet-5", _DEFAULT_MODELS)
+        self.assertIn("claude-haiku-4-5", _DEFAULT_MODELS)
 
 
 class CompleteTests(DeferrableTestCase):
@@ -419,3 +521,145 @@ class StreamTests(DeferrableTestCase):
             # First delta should have been yielded before error.
             self.assertEqual(len(collected), 1)
             self.assertIsInstance(collected[0], TextDelta)
+
+
+class SamplingRetryTests(DeferrableTestCase):
+    def setUp(self) -> None:
+        _MODELS_REJECTING_SAMPLING.clear()
+
+    def tearDown(self) -> None:
+        _MODELS_REJECTING_SAMPLING.clear()
+
+    def _resolve_patch(self):
+        return mock.patch(
+            "LLM.sublime_llm.providers.anthropic.resolve_key",
+            return_value=(_KEY_ENV["ANTHROPIC_API_KEY"], "env"),
+        )
+
+    def _err_400(self, message: str) -> urllib.error.HTTPError:
+        body = json.dumps(
+            {"type": "error", "error": {"type": "invalid_request_error", "message": message}}
+        ).encode("utf-8")
+        return urllib.error.HTTPError(
+            url="https://api.anthropic.com/v1/messages",
+            code=400,
+            msg="Bad Request",
+            hdrs=None,
+            fp=io.BytesIO(body),
+        )
+
+    def _fail_then_ok(self, err, captured):
+        """urlopen side_effect: raise `err` once, then capture body + return 200."""
+        state = {"n": 0}
+
+        def fake(req, timeout=None, context=None):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise err
+            captured.append(json.loads(req.data.decode("utf-8")))
+            body = json.dumps({"content": [{"type": "text", "text": "ok"}]}).encode("utf-8")
+            return MockResponse(body=body, status=200)
+
+        return fake
+
+    def _capture_ok(self, captured):
+        def fake(req, timeout=None, context=None):
+            captured.append(json.loads(req.data.decode("utf-8")))
+            body = json.dumps({"content": [{"type": "text", "text": "ok"}]}).encode("utf-8")
+            return MockResponse(body=body, status=200)
+
+        return fake
+
+    def test_retries_without_sampling_when_temperature_named(self) -> None:
+        err = self._err_400("temperature: Extra inputs are not permitted")
+        captured = []
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=self._fail_then_ok(err, captured),
+        ):
+            p = _make_provider()
+            out = p.complete(
+                [ChatMessage("user", "hi")],
+                "claude-opus-4-8",
+                {"temperature": 0.7, "max_tokens": 1024},
+                threading.Event(),
+            )
+        self.assertEqual(out, "ok")
+        # Only the retry request reached the (recording) 200 path, and it
+        # carried no sampling params.
+        self.assertEqual(len(captured), 1)
+        self.assertNotIn("temperature", captured[0])
+        # The model is remembered for the rest of the session.
+        self.assertIn("claude-opus-4-8", _MODELS_REJECTING_SAMPLING)
+
+    def test_retries_on_generic_parameter_rejection(self) -> None:
+        # No param named, but a generic "unexpected" hint + a sampling param sent.
+        err = self._err_400("Unexpected keyword argument provided to this model.")
+        captured = []
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=self._fail_then_ok(err, captured),
+        ):
+            p = _make_provider()
+            out = p.complete(
+                [ChatMessage("user", "hi")],
+                "claude-sonnet-5",
+                {"temperature": 0.7, "max_tokens": 1024},
+                threading.Event(),
+            )
+        self.assertEqual(out, "ok")
+        self.assertNotIn("temperature", captured[0])
+
+    def test_cached_model_skips_sampling_no_retry(self) -> None:
+        _MODELS_REJECTING_SAMPLING.add("claude-opus-4-8")
+        captured = []
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=self._capture_ok(captured),
+        ):
+            p = _make_provider()
+            out = p.complete(
+                [ChatMessage("user", "hi")],
+                "claude-opus-4-8",
+                {"temperature": 0.7, "max_tokens": 1024},
+                threading.Event(),
+            )
+        self.assertEqual(out, "ok")
+        # Single round-trip (no 400/retry), and temperature was never sent.
+        self.assertEqual(len(captured), 1)
+        self.assertNotIn("temperature", captured[0])
+
+    def test_temperature_sent_for_unflagged_model(self) -> None:
+        captured = []
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=self._capture_ok(captured),
+        ):
+            p = _make_provider()
+            p.complete(
+                [ChatMessage("user", "hi")],
+                "claude-sonnet-4-6",
+                {"temperature": 0.3, "max_tokens": 100},
+                threading.Event(),
+            )
+        self.assertEqual(captured[0].get("temperature"), 0.3)
+        self.assertNotIn("claude-sonnet-4-6", _MODELS_REJECTING_SAMPLING)
+
+    def test_unrelated_400_not_retried(self) -> None:
+        err = self._err_400("messages.0.content: Field required")
+        with self._resolve_patch(), mock.patch(
+            "LLM.sublime_llm.providers.anthropic.urllib.request.urlopen",
+            side_effect=err,
+        ):
+            p = _make_provider()
+            with self.assertRaises(ProviderError) as cm:
+                p.complete(
+                    [ChatMessage("user", "hi")],
+                    "claude-opus-4-8",
+                    {"temperature": 0.7, "max_tokens": 1024},
+                    threading.Event(),
+                )
+            self.assertEqual(cm.exception.code, "BAD_REQUEST")
+            self.assertIn("Field required", cm.exception.message)
+        # An unrelated 400 must not poison the sampling cache.
+        self.assertNotIn("claude-opus-4-8", _MODELS_REJECTING_SAMPLING)

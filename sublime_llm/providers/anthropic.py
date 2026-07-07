@@ -32,13 +32,47 @@ _DEFAULT_BASE_URL = "https://api.anthropic.com/v1"
 _DEFAULT_VERSION = "2023-06-01"
 _DEFAULT_MAX_TOKENS = 4096
 _READ_TIMEOUT = 60
+_PROBE_TIMEOUT = 5
 
+# Offline fallback only. list_models() discovers the live set from /v1/models;
+# this list is used when that request can't be made (no key, no network) so the
+# model picker still has something to show. Keep it to current, broadly useful
+# models — live discovery surfaces everything the account can actually access.
 _DEFAULT_MODELS = [
+    "claude-opus-4-8",
     "claude-opus-4-7",
-    "claude-opus-4-6",
+    "claude-sonnet-5",
     "claude-sonnet-4-6",
     "claude-haiku-4-5",
 ]
+
+# The only sampling params the plugin sends today are temperature/top_p, but we
+# treat the whole group together because newer models remove them as a set.
+_SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
+
+# Phrases (besides the param name itself) that mark a 400 as a rejected
+# *parameter* rather than a content/format problem. Kept broad on purpose:
+# dropping optional sampling params is harmless, so this errs toward retrying,
+# and it keeps working if Anthropic changes the exact error wording — no code
+# change needed.
+_PARAM_REJECTION_HINTS = (
+    "not supported",
+    "unsupported",
+    "not permitted",
+    "not allowed",
+    "unexpected",
+    "unrecognized",
+    "extra inputs",
+    "extra fields",
+    "deprecated",
+    "remove",
+)
+
+# Runtime cache of models observed to reject sampling params this session.
+# Populated on the first rejection so later requests to the same model omit
+# those params and skip a wasted round-trip. Learned, not hardcoded — resets on
+# plugin reload. Set mutation from the streaming thread is GIL-atomic.
+_MODELS_REJECTING_SAMPLING = set()
 
 
 def _build_ssl_context() -> ssl.SSLContext:
@@ -96,10 +130,62 @@ class AnthropicProvider(Provider):
         return ProviderHealth.OK
 
     def list_models(self) -> List[str]:
+        # An explicit override pins the list and skips the network call.
+        # Otherwise discover live from the Models API and fall back to the
+        # built-in list when that endpoint can't be reached.
         override = (self.settings_dict or {}).get("anthropic_models")
         if isinstance(override, list) and override:
             return [str(m) for m in override]
+        fetched = self._fetch_models()
+        if fetched:
+            return fetched
         return list(_DEFAULT_MODELS)
+
+    def _fetch_models(self) -> List[str]:
+        """Discover available models via GET /v1/models; [] if unavailable."""
+        key = self._get_key()
+        if not key:
+            return []
+        url = self.base_url + "/models?limit=1000"
+        headers = {"x-api-key": key, "anthropic-version": self.anthropic_version}
+        try:
+            resp = self._open_url(
+                url, method="GET", headers=headers, body=None, timeout=_PROBE_TIMEOUT
+            )
+        except urllib.error.HTTPError as e:
+            try:
+                e.close()
+            except Exception:
+                pass
+            _log.warning("anthropic list_models: request failed (HTTP %s)", e.code)
+            return []
+        except Exception as e:
+            _log.warning(
+                "anthropic list_models: request failed (%s)", type(e).__name__
+            )
+            return []
+        try:
+            raw = resp.read()
+        except Exception as e:
+            _log.warning("anthropic list_models: read failed (%s)", type(e).__name__)
+            return []
+        finally:
+            try:
+                resp.close()
+            except Exception:
+                pass
+        try:
+            data = json.loads(raw.decode("utf-8"))
+            models = [
+                m["id"]
+                for m in data.get("data", [])
+                if isinstance(m, dict) and "id" in m
+            ]
+        except Exception:
+            _log.warning("anthropic list_models: malformed JSON (%d bytes)", len(raw))
+            return []
+        models.sort()
+        return models
 
     def _translate_messages(
         self, messages: List[ChatMessage]
@@ -130,10 +216,13 @@ class AnthropicProvider(Provider):
         }
         if system_str:
             body["system"] = system_str
-        if opts.get("temperature") is not None:
-            body["temperature"] = opts["temperature"]
-        if opts.get("top_p") is not None:
-            body["top_p"] = opts["top_p"]
+        # Omit sampling params for models known (this session) to reject them,
+        # so we don't force a 400-then-retry on every request.
+        if model not in _MODELS_REJECTING_SAMPLING:
+            if opts.get("temperature") is not None:
+                body["temperature"] = opts["temperature"]
+            if opts.get("top_p") is not None:
+                body["top_p"] = opts["top_p"]
         stop = opts.get("stop_sequences")
         if stop is None:
             stop = opts.get("stop")
@@ -253,27 +342,28 @@ class AnthropicProvider(Provider):
             url, method="POST", headers=headers, body=raw, timeout=timeout
         )
 
-    # Models that reject `temperature` (or other params) report it via 400.
-    # We detect those once, drop the offending field, and retry transparently.
-    _RETRYABLE_PARAM_PATTERNS = (
-        ("temperature", "temperature"),
-        ("top_p", "top_p"),
-        ("top_k", "top_k"),
-    )
+    @staticmethod
+    def _sampling_rejected(body_msg: str, body: dict) -> bool:
+        """Whether a 400 looks like the model rejecting a sampling param we sent.
 
-    def _param_to_drop_from_400(self, body_msg: str):
+        Newer Claude models (Opus 4.7+, Sonnet 5, Fable 5) reject
+        temperature/top_p/top_k with a 400. We recognize that from the error
+        naming the field, or from generic "unsupported parameter" phrasing, and
+        keep the match broad because dropping an optional sampling param is
+        always safe — the model just falls back to its own default.
+        """
+        if not any(name in body for name in _SAMPLING_PARAMS):
+            return False
         if not body_msg:
-            return None
+            return False
         lowered = body_msg.lower()
-        if "deprecated" not in lowered and "not supported" not in lowered and "unsupported" not in lowered:
-            return None
-        for needle, field in self._RETRYABLE_PARAM_PATTERNS:
-            if needle in lowered:
-                return field
-        return None
+        if any(name in lowered for name in _SAMPLING_PARAMS):
+            return True
+        return any(hint in lowered for hint in _PARAM_REJECTION_HINTS)
 
     def _post_with_retry(self, body: dict, timeout: int):
-        """POST /messages, retrying once with a deprecated param stripped on 400."""
+        """POST /messages, retrying once without sampling params on a 400 that
+        rejects them (and remembering the model so later requests skip them)."""
         try:
             return self._post_messages(body, timeout=timeout)
         except urllib.error.HTTPError as e:
@@ -284,23 +374,27 @@ class AnthropicProvider(Provider):
                 e.close()
             except Exception:
                 pass
-            drop = self._param_to_drop_from_400(body_msg)
-            if drop is None or drop not in body:
-                # Not a known recoverable case; re-raise as a fresh HTTPError-like
-                # ProviderError so the caller surfaces the original detail.
-                raise ProviderError(
-                    "BAD_REQUEST",
-                    "Anthropic rejected the request (HTTP 400){0}".format(
-                        " — " + body_msg if body_msg else " — no detail returned"
-                    ),
-                    False,
-                )
-            _log.warning(
-                "anthropic: dropping '%s' and retrying (model rejected it)", drop
+            if self._sampling_rejected(body_msg, body):
+                retry_body = {
+                    k: v for k, v in body.items() if k not in _SAMPLING_PARAMS
+                }
+                if retry_body != body:
+                    model = body.get("model")
+                    if model:
+                        _MODELS_REJECTING_SAMPLING.add(model)
+                    _log.warning(
+                        "anthropic: model rejected a sampling parameter; "
+                        "retrying without temperature/top_p/top_k"
+                    )
+                    return self._post_messages(retry_body, timeout=timeout)
+            # Not a recoverable sampling rejection; surface the original detail.
+            raise ProviderError(
+                "BAD_REQUEST",
+                "Anthropic rejected the request (HTTP 400){0}".format(
+                    " — " + body_msg if body_msg else " — no detail returned"
+                ),
+                False,
             )
-            retry_body = dict(body)
-            retry_body.pop(drop, None)
-            return self._post_messages(retry_body, timeout=timeout)
 
     def complete(
         self,

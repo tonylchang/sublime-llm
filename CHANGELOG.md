@@ -5,6 +5,15 @@ All notable changes to LLM (formerly `sublime-llm`) will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- The Anthropic provider now discovers its model list live from the `/v1/models` endpoint, so new Claude models appear in `LLM: Choose Model` without a plugin update. A small built-in list is used only as an offline fallback (no key or no network). Set `anthropic_models` to pin an explicit list and skip the lookup.
+- Refreshed the built-in Anthropic fallback model list to current models.
+
+### Fixed
+- Anthropic requests to models that don't accept `temperature` / `top_p` / `top_k` (Opus 4.7+, Sonnet 5, Fable 5) no longer depend on the exact upstream 400 wording to recover. The provider detects the rejection more robustly, retries once without the sampling parameters, and remembers the model for the session so later requests omit them up front instead of paying a retry each time.
+
 ## [1.0.2] - 2026-06-06
 
 ### Changed

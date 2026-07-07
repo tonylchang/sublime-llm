@@ -187,14 +187,14 @@ General chat settings live in `LLM.sublime-settings` (defaults shipped with the 
 | `provider` | `"ollama"` | Active provider. One of `ollama`, `openai`, `anthropic`, `openrouter`, `deepseek`, `custom`. |
 | `model` | `"llama3.2"` | Model identifier for the active provider. The default matches the Ollama quickstart; set another model via `config.json`, user settings, or `LLM: Choose Model`. |
 | `base_url` | `"http://localhost:11434"` | Used by the Ollama provider. Other providers have their own defaults (see provider matrix). |
-| `temperature` | `0.7` | Sampling temperature. |
+| `temperature` | `0.7` | Sampling temperature. Automatically omitted for Anthropic models that reject sampling parameters (Opus 4.7+, Sonnet 5, Fable 5); those models use their own default. |
 | `max_tokens` | `4096` | Max completion tokens. Required for Anthropic; recommended for OpenAI. |
 | `system_prompt` | `""` | Optional system message prepended to each conversation. |
 | `allow_secrets_in_settings_file` | `false` | If `true`, allows hosted-provider keys (`*_api_key` settings) to be read from this settings file. Not recommended. |
 | `openrouter_referer` | `""` | Optional `HTTP-Referer` header for OpenRouter analytics. |
 | `openrouter_title` | `""` | Optional `X-Title` header for OpenRouter analytics. |
 | `anthropic_version` | `"2023-06-01"` | Value of the `anthropic-version` request header. |
-| `anthropic_models` | `[]` | Override the model list shown by the Anthropic provider. Empty means use the plugin's built-in default list. |
+| `anthropic_models` | `[]` | Pin the model list shown by the Anthropic provider. When empty (default), the provider discovers models live from Anthropic's `/v1/models` endpoint, so new models appear without a plugin update; it falls back to a small built-in list only when that endpoint is unreachable (no key or no network). Set a non-empty list to pin an explicit set and skip the live lookup. |
 | `deepseek_models` | `["deepseek-v4-flash", "deepseek-v4-pro"]` | Fallback model list for DeepSeek when `/models` isn't reachable. |
 | `custom_base_url` | `""` | Required when `provider` is `"custom"`. Example: `http://localhost:1234/v1` for LM Studio. |
 | `custom_api_key` | `""` | Optional API key for the custom endpoint (the env var `CUSTOM_API_KEY` and the external config file are preferred). |

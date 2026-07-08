@@ -4,6 +4,7 @@ import urllib.error
 from typing import List
 
 from ..logging_setup import get_logger
+from . import _http
 from .openai import OpenAIProvider
 
 _log = get_logger()
@@ -30,7 +31,7 @@ class DeepSeekProvider(OpenAIProvider):
             return self._fallback_models()
         url = self.base_url + "/models"
         try:
-            resp = self._open_url(url, method="GET", headers=headers, timeout=5)
+            resp = _http.open_url(url, method="GET", headers=headers, timeout=5)
         except urllib.error.HTTPError as e:
             try:
                 e.close()

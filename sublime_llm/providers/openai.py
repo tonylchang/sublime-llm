@@ -1,13 +1,12 @@
 """OpenAI provider."""
 import json
 import socket
-import ssl
 import threading
 import urllib.error
-import urllib.request
 from typing import Iterator, List, Optional
 
 from ..logging_setup import get_logger
+from . import _http
 from .base import (
     ChatMessage,
     Done,
@@ -20,33 +19,12 @@ from .base import (
 from ..secrets import resolve_key
 from ..streaming import iter_sse_lines
 
-try:
-    import certifi
-    _CA_FILE = certifi.where()
-except ImportError:
-    _CA_FILE = None
-
 _log = get_logger()
 
 _DEFAULT_BASE_URL = "https://api.openai.com/v1"
 _PROBE_TIMEOUT = 5
 _READ_TIMEOUT = 60
 _DEFAULT_MAX_TOKENS = 4096
-
-
-def _build_ssl_context() -> ssl.SSLContext:
-    if _CA_FILE:
-        return ssl.create_default_context(cafile=_CA_FILE)
-    return ssl.create_default_context()
-
-
-def _normalize_base_url(raw: str, default: str) -> str:
-    if not raw:
-        return default
-    s = raw.strip().rstrip("/")
-    if "://" not in s:
-        s = "https://" + s
-    return s
 
 
 class OpenAIProvider(Provider):
@@ -58,7 +36,9 @@ class OpenAIProvider(Provider):
     def __init__(self, settings_dict: dict) -> None:
         super().__init__(settings_dict)
         raw = (settings_dict or {}).get("base_url")
-        self.base_url = _normalize_base_url(raw, self._default_base_url)
+        self.base_url = _http.normalize_base_url(
+            raw, self._default_base_url, scheme="https"
+        )
 
     def _get_key(self) -> Optional[str]:
         key, _src = resolve_key(self._secret_provider_name)
@@ -80,21 +60,6 @@ class OpenAIProvider(Provider):
             "Content-Type": "application/json",
         }
 
-    def _open_url(
-        self,
-        url: str,
-        method: str = "GET",
-        headers: Optional[dict] = None,
-        body: Optional[bytes] = None,
-        timeout: int = 30,
-    ):
-        req = urllib.request.Request(url, data=body, method=method)
-        if headers:
-            for k, v in headers.items():
-                req.add_header(k, v)
-        ctx = _build_ssl_context()
-        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
-
     def is_available(self) -> ProviderHealth:
         if not self._get_key():
             return ProviderHealth.MISSING_CREDENTIAL
@@ -104,7 +69,7 @@ class OpenAIProvider(Provider):
             return ProviderHealth.MISSING_CREDENTIAL
         url = self.base_url + "/models"
         try:
-            resp = self._open_url(url, method="GET", headers=headers, timeout=_PROBE_TIMEOUT)
+            resp = _http.open_url(url, method="GET", headers=headers, timeout=_PROBE_TIMEOUT)
         except ConnectionRefusedError:
             return ProviderHealth.UNREACHABLE
         except socket.timeout:
@@ -154,7 +119,7 @@ class OpenAIProvider(Provider):
             return []
         url = self.base_url + "/models"
         try:
-            resp = self._open_url(url, method="GET", headers=headers, timeout=_PROBE_TIMEOUT)
+            resp = _http.open_url(url, method="GET", headers=headers, timeout=_PROBE_TIMEOUT)
         except urllib.error.HTTPError as e:
             try:
                 e.close()
@@ -217,7 +182,7 @@ class OpenAIProvider(Provider):
     def _post_chat(self, body: dict):
         headers = self._default_headers()
         data = json.dumps(body).encode("utf-8")
-        return self._open_url(
+        return _http.open_url(
             self._chat_url(),
             method="POST",
             headers=headers,

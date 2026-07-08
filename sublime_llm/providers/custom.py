@@ -5,8 +5,9 @@ import urllib.error
 from typing import List, Optional
 
 from ..logging_setup import get_logger
+from . import _http
 from .base import ProviderHealth
-from .openai import OpenAIProvider, _normalize_base_url
+from .openai import OpenAIProvider
 
 _log = get_logger()
 
@@ -22,7 +23,7 @@ class CustomOpenAIProvider(OpenAIProvider):
         self._provider_label = s.get("custom_label", "Custom")
         super().__init__(settings_dict)
         raw = s.get("custom_base_url") or s.get("base_url") or ""
-        self.base_url = _normalize_base_url(raw, "")
+        self.base_url = _http.normalize_base_url(raw, "", scheme="https")
 
     def _default_headers(self) -> dict:
         key = self._get_key()
@@ -53,7 +54,7 @@ class CustomOpenAIProvider(OpenAIProvider):
         url = self.base_url + "/models"
         headers = self._list_models_headers()
         try:
-            resp = self._open_url(url, method="GET", headers=headers, timeout=5)
+            resp = _http.open_url(url, method="GET", headers=headers, timeout=5)
         except ConnectionRefusedError:
             return ProviderHealth.UNREACHABLE
         except socket.timeout:
@@ -97,7 +98,7 @@ class CustomOpenAIProvider(OpenAIProvider):
         url = self.base_url + "/models"
         headers = self._list_models_headers()
         try:
-            resp = self._open_url(url, method="GET", headers=headers, timeout=5)
+            resp = _http.open_url(url, method="GET", headers=headers, timeout=5)
         except urllib.error.HTTPError as e:
             try:
                 e.close()

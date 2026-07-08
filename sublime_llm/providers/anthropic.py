@@ -1,13 +1,12 @@
 """Anthropic provider."""
 import json
 import socket
-import ssl
 import threading
 import urllib.error
-import urllib.request
 from typing import Iterator, List, Optional, Tuple
 
 from ..logging_setup import get_logger
+from . import _http
 from .base import (
     ChatMessage,
     Done,
@@ -19,12 +18,6 @@ from .base import (
 )
 from ..secrets import resolve_key
 from ..streaming import iter_sse_lines
-
-try:
-    import certifi
-    _CA_FILE = certifi.where()
-except ImportError:
-    _CA_FILE = None
 
 _log = get_logger()
 
@@ -75,18 +68,6 @@ _PARAM_REJECTION_HINTS = (
 _MODELS_REJECTING_SAMPLING = set()
 
 
-def _build_ssl_context() -> ssl.SSLContext:
-    if _CA_FILE:
-        return ssl.create_default_context(cafile=_CA_FILE)
-    return ssl.create_default_context()
-
-
-def _normalize_base_url(raw: str) -> str:
-    if not raw:
-        return _DEFAULT_BASE_URL
-    return raw.strip().rstrip("/")
-
-
 class _StreamState:
     def __init__(self) -> None:
         self.stop_reason: Optional[str] = None
@@ -99,7 +80,7 @@ class AnthropicProvider(Provider):
     def __init__(self, settings_dict: dict) -> None:
         super().__init__(settings_dict)
         raw = (settings_dict or {}).get("base_url")
-        self.base_url = _normalize_base_url(raw or _DEFAULT_BASE_URL)
+        self.base_url = _http.normalize_base_url(raw, _DEFAULT_BASE_URL)
         self.anthropic_version = str(
             (settings_dict or {}).get("anthropic_version") or _DEFAULT_VERSION
         )
@@ -149,7 +130,7 @@ class AnthropicProvider(Provider):
         url = self.base_url + "/models?limit=1000"
         headers = {"x-api-key": key, "anthropic-version": self.anthropic_version}
         try:
-            resp = self._open_url(
+            resp = _http.open_url(
                 url, method="GET", headers=headers, body=None, timeout=_PROBE_TIMEOUT
             )
         except urllib.error.HTTPError as e:
@@ -229,20 +210,6 @@ class AnthropicProvider(Provider):
         if stop is not None:
             body["stop_sequences"] = stop
         return body
-
-    def _open_url(
-        self,
-        url: str,
-        method: str,
-        headers: dict,
-        body: Optional[bytes],
-        timeout: int,
-    ):
-        req = urllib.request.Request(url, data=body, method=method)
-        for k, v in headers.items():
-            req.add_header(k, v)
-        ctx = _build_ssl_context()
-        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
 
     def _read_error_body(self, err: urllib.error.HTTPError) -> str:
         """Pull the API's error message out of the HTTPError body, if present."""
@@ -338,7 +305,7 @@ class AnthropicProvider(Provider):
         url = self.base_url + "/messages"
         headers = self._default_headers()
         raw = json.dumps(body).encode("utf-8")
-        return self._open_url(
+        return _http.open_url(
             url, method="POST", headers=headers, body=raw, timeout=timeout
         )
 

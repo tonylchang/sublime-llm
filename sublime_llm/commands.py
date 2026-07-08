@@ -14,7 +14,7 @@ from .chat_view import ChatView
 from .logging_setup import get_logger
 from .markdown_render import md_to_html, wrap_minihtml
 from .providers import Done, ProviderError, ProviderHealth, TextDelta
-from .registry import get_active_provider, get_provider
+from .registry import build_settings_dict, get_active_provider, get_provider
 from .secrets import (
     get_external_config_file_path,
     get_secrets_file_path,
@@ -473,38 +473,9 @@ class SublimeLlmSendSelectionCommand(sublime_plugin.TextCommand):
 
 
 def _settings_dict_for(provider_name: str) -> dict:
-    s = get_settings()
-    d = {
-        "temperature": s.get_temperature(),
-        "max_tokens": s.get_max_tokens(),
-    }
-    # Per-provider base URL. Ollama keeps the legacy "base_url" setting; every
-    # other provider uses its own "<name>_base_url" override and falls back to
-    # the provider's built-in default when unset. Must match
-    # registry.get_active_provider so the picker and the active provider hit
-    # the same endpoint.
-    if provider_name == "ollama":
-        base_url = s.get_base_url()
-    else:
-        base_url = s.get("{0}_base_url".format(provider_name), "") or ""
-    if base_url:
-        d["base_url"] = base_url
-    # Per-provider extras.
-    for k in (
-        "openrouter_referer",
-        "openrouter_title",
-        "anthropic_models",
-        "deepseek_models",
-        "custom_base_url",
-        "custom_models",
-        "custom_label",
-        "custom_api_key",
-        "allow_secrets_in_settings_file",
-    ):
-        v = s.get(k, None)
-        if v is not None:
-            d[k] = v
-    return d
+    # Delegates to the registry so the picker and the active provider build the
+    # same settings_dict — single source of truth, no drift.
+    return build_settings_dict(provider_name)
 
 
 def _write_setting(key: str, value) -> None:

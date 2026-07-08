@@ -2,13 +2,12 @@
 import json
 import os
 import socket
-import ssl
 import threading
 import urllib.error
-import urllib.request
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 from ..logging_setup import get_logger
+from . import _http
 from .base import (
     ChatMessage,
     Done,
@@ -20,32 +19,11 @@ from .base import (
 )
 from ..streaming import iter_ndjson_lines
 
-try:
-    import certifi
-    _CA_FILE = certifi.where()
-except ImportError:
-    _CA_FILE = None
-
 _log = get_logger()
 
 _DEFAULT_BASE_URL = "http://localhost:11434"
 _PROBE_TIMEOUT = 3
 _READ_TIMEOUT = 60
-
-
-def _build_ssl_context() -> ssl.SSLContext:
-    if _CA_FILE:
-        return ssl.create_default_context(cafile=_CA_FILE)
-    return ssl.create_default_context()
-
-
-def _normalize_base_url(raw: str) -> str:
-    if not raw:
-        return _DEFAULT_BASE_URL
-    s = raw.strip().rstrip("/")
-    if "://" not in s:
-        s = "http://" + s
-    return s
 
 
 class OllamaProvider(Provider):
@@ -58,27 +36,12 @@ class OllamaProvider(Provider):
             raw = os.environ.get("OLLAMA_HOST", "")
         if not raw:
             raw = _DEFAULT_BASE_URL
-        self.base_url = _normalize_base_url(raw)
-
-    def _open_url(
-        self,
-        url: str,
-        method: str = "GET",
-        headers: Optional[dict] = None,
-        body: Optional[bytes] = None,
-        timeout: int = 30,
-    ):
-        req = urllib.request.Request(url, data=body, method=method)
-        if headers:
-            for k, v in headers.items():
-                req.add_header(k, v)
-        ctx = _build_ssl_context()
-        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+        self.base_url = _http.normalize_base_url(raw, _DEFAULT_BASE_URL, scheme="http")
 
     def is_available(self) -> ProviderHealth:
         url = self.base_url + "/api/tags"
         try:
-            resp = self._open_url(url, method="GET", timeout=_PROBE_TIMEOUT)
+            resp = _http.open_url(url, method="GET", timeout=_PROBE_TIMEOUT)
         except ConnectionRefusedError:
             return ProviderHealth.UNREACHABLE
         except socket.timeout:
@@ -113,7 +76,7 @@ class OllamaProvider(Provider):
     def list_models(self) -> List[str]:
         url = self.base_url + "/api/tags"
         try:
-            resp = self._open_url(url, method="GET", timeout=_PROBE_TIMEOUT)
+            resp = _http.open_url(url, method="GET", timeout=_PROBE_TIMEOUT)
         except urllib.error.HTTPError as e:
             try:
                 e.close()
@@ -167,7 +130,7 @@ class OllamaProvider(Provider):
         body = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         timeout = _READ_TIMEOUT
-        return self._open_url(url, method="POST", headers=headers, body=body, timeout=timeout)
+        return _http.open_url(url, method="POST", headers=headers, body=body, timeout=timeout)
 
     def _map_http_error(self, err: urllib.error.HTTPError, model: str) -> ProviderError:
         code = err.code

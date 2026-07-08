@@ -19,6 +19,22 @@ _PROVIDER_CLASSES = {
 }
 
 
+# Optional provider-specific settings forwarded into a provider's settings_dict
+# when present. Single source of truth shared by the active provider and the
+# provider/model pickers (commands._settings_dict_for) so the two can't drift.
+_PROVIDER_SETTING_KEYS = (
+    "openrouter_referer",
+    "openrouter_title",
+    "anthropic_models",
+    "deepseek_models",
+    "custom_base_url",
+    "custom_models",
+    "custom_label",
+    "custom_api_key",
+    "allow_secrets_in_settings_file",
+)
+
+
 def get_provider(name: str, settings_dict: dict) -> Provider:
     cls = _PROVIDER_CLASSES.get(name)
     if cls is None:
@@ -26,37 +42,32 @@ def get_provider(name: str, settings_dict: dict) -> Provider:
     return cls(settings_dict)
 
 
-def get_active_provider() -> Provider:
+def build_settings_dict(provider_name: str) -> dict:
+    """Assemble the settings_dict passed to a provider constructor.
+
+    Ollama keeps the legacy "base_url" setting for backward compatibility;
+    every other provider uses its own "<name>_base_url" override (or the
+    provider's built-in default when unset). Provider-specific extras are
+    forwarded when present.
+    """
     settings = get_settings()
-    name = settings.get_provider()
     settings_dict = {
         "temperature": settings.get_temperature(),
         "max_tokens": settings.get_max_tokens(),
     }
-    # Per-provider base URL. Ollama keeps the legacy "base_url" setting for
-    # backward compatibility; every other provider uses its own
-    # "<name>_base_url" override (or its built-in default if unset).
-    if name == "ollama":
+    if provider_name == "ollama":
         base_url = settings.get_base_url()
     else:
-        base_url = settings.get("{0}_base_url".format(name), "") or ""
+        base_url = settings.get("{0}_base_url".format(provider_name), "") or ""
     if base_url:
         settings_dict["base_url"] = base_url
-    # Provider-specific extras are looked up lazily via settings.get() inside
-    # callers (e.g. commands._settings_dict_for); registry only seeds shared
-    # defaults so that callers without those extras still get a working
-    # provider.
-    for k in (
-        "openrouter_referer",
-        "openrouter_title",
-        "anthropic_models",
-        "deepseek_models",
-        "custom_base_url",
-        "custom_models",
-        "custom_label",
-        "custom_api_key",
-    ):
+    for k in _PROVIDER_SETTING_KEYS:
         v = settings.get(k, None)
         if v is not None:
             settings_dict[k] = v
-    return get_provider(name, settings_dict)
+    return settings_dict
+
+
+def get_active_provider() -> Provider:
+    name = get_settings().get_provider()
+    return get_provider(name, build_settings_dict(name))

@@ -13,7 +13,7 @@ from .chat_parser import parse_messages
 from .chat_view import ChatView
 from .logging_setup import get_logger
 from .markdown_render import md_to_html, wrap_minihtml
-from .providers import Done, ProviderError, ProviderHealth, TextDelta
+from .providers import Done, ProviderError, TextDelta
 from .registry import build_settings_dict, get_active_provider, get_provider
 from .secrets import (
     get_external_config_file_path,

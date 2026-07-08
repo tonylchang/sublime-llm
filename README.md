@@ -314,6 +314,7 @@ PRs welcome. Please:
 - Add unit tests for new logic in `tests/`. Avoid Sublime-dependent imports at module top level so the suite runs without Sublime.
 - Keep API-key handling routed through `sublime_llm.secrets.resolve_key`. Never log keys; call `register_secret` (from `sublime_llm.logging_setup`) on any new key material so the redaction filter catches it.
 - Match the existing code style: stdlib only, Python 3.8 target, short one-line docstrings at most, no multi-line comment blocks.
+- Run `ruff check .` before submitting; CI enforces it. The ruleset (`ruff.toml`) is dev-only and excluded from the packaged plugin.
 
 Open work and post-1.0 ideas are tracked in the GitHub issue list.
 

@@ -1,7 +1,6 @@
 """Tests for sublime_llm.providers.openai."""
 import io
 import json
-import socket
 import threading
 import urllib.error
 from unittest import mock

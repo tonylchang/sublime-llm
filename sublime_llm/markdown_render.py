@@ -51,7 +51,6 @@ def md_to_html(text: str) -> str:
     out: List[str] = []
     list_stack: List[str] = []  # "ul" or "ol"
     in_code = False
-    code_lang = ""
     code_buf: List[str] = []
     paragraph_buf: List[str] = []
     in_quote = False
@@ -87,7 +86,6 @@ def md_to_html(text: str) -> str:
                 )
                 code_buf = []
                 in_code = False
-                code_lang = ""
             else:
                 code_buf.append(line)
             continue
@@ -98,7 +96,6 @@ def md_to_html(text: str) -> str:
             close_lists()
             close_quote()
             in_code = True
-            code_lang = m.group(1)
             continue
 
         if not line.strip():
